@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CLIENT
+  PROFESSIONAL
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  cpf       String?  @unique
+  avatarUrl String?
+  role      Role     @default(CLIENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  services         Service[]
+  tools            Tool[]
+  bookingsAsClient Booking[] @relation("ClientBookings")
+  reviewsWritten   Review[]  @relation("ReviewAuthor")
+  reviewsReceived  Review[]  @relation("ReviewTarget")
+  messagesSent     Message[] @relation("MessageSender")
+
+  @@index([role])
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Decimal
+  category    String
+  images      String[]
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  userId   String
+  user     User      @relation(fields: [userId], references: [id])
+  bookings Booking[]
+
+  @@index([category])
+  @@index([userId])
+  @@index([approved, category])
+}
+
+model Tool {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  pricePerDay Decimal
+  category    String
+  images      String[]
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  userId   String
+  user     User      @relation(fields: [userId], references: [id])
+  bookings Booking[]
+
+  @@index([category])
+  @@index([userId])
+}
+
+model Booking {
+  id         String        @id @default(cuid())
+  status     BookingStatus @default(PENDING)
+  startDate  DateTime
+  endDate    DateTime?
+  totalPrice Decimal
+  paidAt     DateTime?
+  createdAt  DateTime      @default(now())
+
+  clientId String
+  client   User   @relation("ClientBookings", fields: [clientId], references: [id])
+
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id])
+
+  toolId String?
+  tool   Tool?   @relation(fields: [toolId], references: [id])
+
+  payment Payment?
+  review  Review?
+
+  @@index([clientId])
+  @@index([status])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  asaasChargeId String?  @unique
+  status        String
+  amount        Decimal
+  createdAt     DateTime @default(now())
+
+  bookingId String  @unique
+  booking   Booking @relation(fields: [bookingId], references: [id])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  bookingId String  @unique
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  authorId String
+  author   User   @relation("ReviewAuthor", fields: [authorId], references: [id])
+
+  targetId String
+  target   User   @relation("ReviewTarget", fields: [targetId], references: [id])
+
+  @@index([targetId])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  messages  Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  senderId String
+  sender   User   @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+}
