@@ -6,51 +6,125 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRoleType {
   CLIENT
   PROFESSIONAL
+  LOCADOR
   ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum BookingStatus {
   PENDING
   CONFIRMED
+  AWAITING_PAYMENT
   PAID
+  IN_PROGRESS
   COMPLETED
   CANCELLED
+  DISPUTED
 }
+
+enum PaymentStatus {
+  PENDING
+  HELD
+  RELEASED
+  REFUNDED
+  FAILED
+}
+
+enum ProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+// ─── Usuário ──────────────────────────────────────────────────────────────────
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  phone     String?
-  cpf       String?  @unique
-  avatarUrl String?
-  role      Role     @default(CLIENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  name        String
+  phone       String
+  cpf         String   @unique
+  avatarUrl   String?
+  asaasWalletId String? // ID da subconta no Asaas para receber pagamentos
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  services         Service[]
-  tools            Tool[]
-  bookingsAsClient Booking[] @relation("ClientBookings")
-  reviewsWritten   Review[]  @relation("ReviewAuthor")
-  reviewsReceived  Review[]  @relation("ReviewTarget")
-  messagesSent     Message[] @relation("MessageSender")
+  // Relacionamentos
+  roles                UserRole[]
+  identityVerification IdentityVerification?
+  services             Service[]
+  tools                Tool[]
+  bookingsAsClient     Booking[]     @relation("ClientBookings")
+  reviewsWritten       Review[]      @relation("ReviewAuthor")
+  reviewsReceived      Review[]      @relation("ReviewTarget")
+  messagesSent         Message[]     @relation("MessageSender")
+  proposals            Proposal[]    @relation("ProposalSender")
 
-  @@index([role])
+  @@index([email])
+  @@index([cpf])
 }
+
+// ─── Papéis do usuário ────────────────────────────────────────────────────────
+
+// Um usuário pode ter múltiplos papéis ao mesmo tempo:
+// ex: alguém pode ser CLIENT e PROFESSIONAL simultaneamente
+model UserRole {
+  id        String       @id @default(cuid())
+  type      UserRoleType
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, type]) // um usuário não pode ter o mesmo papel duas vezes
+  @@index([userId])
+}
+
+// ─── Verificação de identidade (KYC) ─────────────────────────────────────────
+
+// Profissionais e Locadores precisam ter identidade verificada
+// para aparecer nas buscas. Clientes não precisam.
+model IdentityVerification {
+  id              String             @id @default(cuid())
+  status          VerificationStatus @default(PENDING)
+  documentFrontUrl String            // Foto frente do RG/CNH
+  documentBackUrl  String            // Foto verso do RG/CNH
+  selfieUrl        String            // Selfie segurando o documento
+  rejectionReason  String?           // Preenchido se status = REJECTED
+  reviewedAt       DateTime?         // Quando foi analisado pelo admin
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+// ─── Serviços ─────────────────────────────────────────────────────────────────
 
 model Service {
   id          String   @id @default(cuid())
   title       String
   description String
-  price       Decimal
   category    String
+  priceFrom   Decimal? // Preço de referência (opcional, valor real vem da Proposta)
   images      String[]
   approved    Boolean  @default(false)
+  active      Boolean  @default(true)
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   userId   String
   user     User      @relation(fields: [userId], references: [id])
@@ -58,18 +132,23 @@ model Service {
 
   @@index([category])
   @@index([userId])
-  @@index([approved, category])
+  @@index([approved, active, category])
 }
+
+// ─── Ferramentas ──────────────────────────────────────────────────────────────
 
 model Tool {
   id          String   @id @default(cuid())
   title       String
   description String
-  pricePerDay Decimal
   category    String
+  pricePerDay Decimal
+  usageRules  String?  // Regras de uso definidas pelo Locador
   images      String[]
   available   Boolean  @default(true)
+  approved    Boolean  @default(false)
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   userId   String
   user     User      @relation(fields: [userId], references: [id])
@@ -77,16 +156,20 @@ model Tool {
 
   @@index([category])
   @@index([userId])
+  @@index([available, approved, category])
 }
 
+// ─── Agendamento / Pedido ─────────────────────────────────────────────────────
+
+// Representa um pedido de serviço ou reserva de ferramenta.
+// O preço real vem da Proposta aceita, não do Service/Tool diretamente.
 model Booking {
-  id         String        @id @default(cuid())
-  status     BookingStatus @default(PENDING)
-  startDate  DateTime
-  endDate    DateTime?
-  totalPrice Decimal
-  paidAt     DateTime?
-  createdAt  DateTime      @default(now())
+  id        String        @id @default(cuid())
+  status    BookingStatus @default(PENDING)
+  startDate DateTime
+  endDate   DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   clientId String
   client   User   @relation("ClientBookings", fields: [clientId], references: [id])
@@ -97,28 +180,106 @@ model Booking {
   toolId String?
   tool   Tool?   @relation(fields: [toolId], references: [id])
 
-  payment Payment?
-  review  Review?
+  // Cada booking tem uma conversa, uma proposta aceita, um pagamento e uma avaliação
+  conversation Conversation?
+  proposal     Proposal?     @relation("AcceptedProposal")
+  payment      Payment?
+  review       Review?
 
   @@index([clientId])
   @@index([status])
 }
 
+// ─── Conversa e Mensagens ─────────────────────────────────────────────────────
+
+// Uma conversa é criada automaticamente quando um Booking é gerado.
+// É por aqui que o orçamento (Proposta) é negociado.
+model Conversation {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+
+  bookingId String    @unique
+  booking   Booking   @relation(fields: [bookingId], references: [id])
+
+  messages  Message[]
+  proposals Proposal[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  imageUrl  String?  // Permite envio de fotos no chat
+  createdAt DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  senderId String
+  sender   User   @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+}
+
+// ─── Proposta de orçamento ────────────────────────────────────────────────────
+
+// Enviada pelo Profissional/Locador dentro da conversa.
+// Quando aceita, o cliente é direcionado para o pagamento.
+model Proposal {
+  id          String         @id @default(cuid())
+  amount      Decimal        // Valor proposto
+  description String?        // Detalhes do que está incluído
+  status      ProposalStatus @default(PENDING)
+  expiresAt   DateTime?      // Proposta pode ter prazo de validade
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  senderId String
+  sender   User   @relation("ProposalSender", fields: [senderId], references: [id])
+
+  // Quando aceita, fica vinculada ao Booking
+  bookingId String?  @unique
+  booking   Booking? @relation("AcceptedProposal", fields: [bookingId], references: [id])
+
+  @@index([conversationId])
+}
+
+// ─── Pagamento ────────────────────────────────────────────────────────────────
+
+// Criado quando o cliente aceita uma Proposta e confirma o pagamento.
+// O valor fica em HELD (retido) até a conclusão do serviço.
 model Payment {
-  id            String   @id @default(cuid())
-  asaasChargeId String?  @unique
-  status        String
-  amount        Decimal
-  createdAt     DateTime @default(now())
+  id              String        @id @default(cuid())
+  status          PaymentStatus @default(PENDING)
+  amount          Decimal
+  asaasChargeId   String?       @unique // ID no Asaas
+  asaasEscrowId   String?               // ID da conta escrow no Asaas
+  pixQrCode       String?               // QR Code do PIX para exibir no frontend
+  pixKey          String?               // Chave PIX copia-e-cola
+  platformFee     Decimal?              // Quanto a plataforma retém
+  providerAmount  Decimal?              // Quanto o profissional/locador recebe
+  paidAt          DateTime?
+  releasedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   bookingId String  @unique
   booking   Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([status])
 }
 
+// ─── Avaliação ────────────────────────────────────────────────────────────────
+
+// Sistema de avaliação "cega" — as avaliações só ficam visíveis
+// quando ambas as partes tiverem avaliado.
 model Review {
   id        String   @id @default(cuid())
-  rating    Int
+  rating    Int      // 1 a 5 estrelas
   comment   String?
+  visible   Boolean  @default(false) // false até ambos avaliarem
   createdAt DateTime @default(now())
 
   bookingId String  @unique
@@ -131,24 +292,5 @@ model Review {
   target   User   @relation("ReviewTarget", fields: [targetId], references: [id])
 
   @@index([targetId])
-}
-
-model Conversation {
-  id        String    @id @default(cuid())
-  createdAt DateTime  @default(now())
-  messages  Message[]
-}
-
-model Message {
-  id        String   @id @default(cuid())
-  content   String
-  createdAt DateTime @default(now())
-
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
-
-  senderId String
-  sender   User   @relation("MessageSender", fields: [senderId], references: [id])
-
-  @@index([conversationId])
+  @@index([visible])
 }
