@@ -5,6 +5,7 @@ import jwt from "@fastify/jwt";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import { authRoutes } from "./routes/auth";
+import { servicesRoutes } from "./routes/services";
 
 const app = Fastify({ logger: true });
 
@@ -30,6 +31,8 @@ async function main() {
 
   // Rotas de autenticação (cadastro e login)
   await app.register(authRoutes, { prefix: "/auth" });
+
+  await app.register(servicesRoutes, { prefix: "/services" });
 
   // Rota de teste simples
   app.get("/health", async () => {
