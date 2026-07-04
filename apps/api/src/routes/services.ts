@@ -20,6 +20,18 @@ const listServiceSchema = z.object({
   limit: z.coerce.number().default(10),
 });
 
+const reportSchema = z.object({
+  reason: z.enum([
+    "INAPPROPRIATE_CONTENT",
+    "FAKE_SERVICE",
+    "WRONG_CATEGORY",
+    "CONTACT_OUTSIDE_PLATFORM",
+    "SPAM",
+    "OTHER",
+  ]),
+  details: z.string().optional(),
+});
+
 export async function servicesRoutes(app: FastifyInstance) {
   // Listar serviços (público)
   app.get("/", async (request, reply) => {
@@ -107,7 +119,7 @@ export async function servicesRoutes(app: FastifyInstance) {
       const body = createServiceSchema.parse(request.body);
       const userId = (request.user as { id: string }).id;
 
-      // Verifica se o usuário tem papel de PROFESSIONAL
+      // Verifica se tem papel de PROFESSIONAL
       const role = await prisma.userRole.findUnique({
         where: { userId_type: { userId, type: "PROFESSIONAL" } },
       });
@@ -118,14 +130,28 @@ export async function servicesRoutes(app: FastifyInstance) {
         });
       }
 
+      // Verifica se a identidade foi verificada
+      const verification = await prisma.identityVerification.findUnique({
+        where: { userId },
+      });
+
+      // Se verificado, publica direto. Se não, fica pendente.
+      const approved = verification?.status === "APPROVED";
+
       const service = await prisma.service.create({
         data: {
           ...body,
           userId,
+          approved,
         },
       });
 
-      return reply.code(201).send({ service });
+      return reply.code(201).send({
+        service,
+        message: approved
+          ? "Serviço publicado com sucesso"
+          : "Serviço criado. Complete a verificação de identidade para publicar.",
+      });
     }
   );
 
@@ -175,13 +201,52 @@ export async function servicesRoutes(app: FastifyInstance) {
         return reply.code(403).send({ error: "Sem permissão" });
       }
 
-      // Não deletamos do banco, só desativamos
       await prisma.service.update({
         where: { id },
         data: { active: false },
       });
 
       return reply.code(204).send();
+    }
+  );
+
+  // Denunciar serviço (autenticado)
+  app.post(
+    "/:id/report",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const body = reportSchema.parse(request.body);
+      const userId = (request.user as { id: string }).id;
+
+      const service = await prisma.service.findUnique({ where: { id } });
+      if (!service) {
+        return reply.code(404).send({ error: "Serviço não encontrado" });
+      }
+
+      // Não pode denunciar o próprio serviço
+      if (service.userId === userId) {
+        return reply.code(400).send({ error: "Você não pode denunciar seu próprio serviço" });
+      }
+
+      // Verifica se já denunciou esse serviço antes
+      const existing = await prisma.report.findFirst({
+        where: { serviceId: id, reporterId: userId },
+      });
+      if (existing) {
+        return reply.code(409).send({ error: "Você já denunciou esse serviço" });
+      }
+
+      await prisma.report.create({
+        data: {
+          reason: body.reason,
+          details: body.details,
+          reporterId: userId,
+          serviceId: id,
+        },
+      });
+
+      return reply.code(201).send({ message: "Denúncia registrada" });
     }
   );
 }
