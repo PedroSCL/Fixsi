@@ -6,9 +6,11 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import { authRoutes } from "./routes/auth";
 import { servicesRoutes } from "./routes/services";
-import { adminRoutes } from "./routes/admin";
 import { toolsRoutes } from "./routes/tools";
 import { bookingsRoutes } from "./routes/bookings";
+import { adminRoutes } from "./routes/admin";
+import { conversationsRoutes } from "./routes/conversations";
+import { setupSocket } from "./lib/socket";
 
 const app = Fastify({ logger: true });
 
@@ -28,19 +30,26 @@ async function main() {
     secret: process.env.JWT_SECRET || "dev-secret-trocar-depois",
   });
 
-  await app.register(authRoutes, { prefix: "/auth" });
-  await app.register(servicesRoutes, { prefix: "/services" });
+  await app.register(authRoutes,          { prefix: "/auth" });
+  await app.register(servicesRoutes,      { prefix: "/services" });
+  await app.register(toolsRoutes,         { prefix: "/tools" });
+  await app.register(bookingsRoutes,      { prefix: "/bookings" });
+  await app.register(adminRoutes,         { prefix: "/admin" });
+  await app.register(conversationsRoutes, { prefix: "/conversations" });
 
-  await app.register(adminRoutes, { prefix: "/admin" });
-  await app.register(toolsRoutes, { prefix: "/tools" });
-  await app.register(bookingsRoutes, { prefix: "/bookings" });
+  app.get("/health", async () => ({ status: "ok" }));
 
-  app.get("/health", async () => {
-    return { status: "ok" };
-  });
-
+  // Precisa fazer o listen antes de pegar o httpServer
   await app.listen({ port: 3001, host: "0.0.0.0" });
+
+  // Configura o Socket.io usando o servidor HTTP do Fastify
+  setupSocket(
+    app.server,
+    process.env.JWT_SECRET || "dev-secret-trocar-depois"
+  );
+
   console.log("🚀 API rodando em http://localhost:3001");
+  console.log("🔌 WebSocket pronto em ws://localhost:3001");
 }
 
 main();
