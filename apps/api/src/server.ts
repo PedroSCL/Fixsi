@@ -11,6 +11,7 @@ import { bookingsRoutes } from "./routes/bookings";
 import { adminRoutes } from "./routes/admin";
 import { conversationsRoutes } from "./routes/conversations";
 import { setupSocket } from "./lib/socket";
+import { reviewsRoutes } from "./routes/reviews";
 
 const app = Fastify({ logger: true });
 
@@ -36,6 +37,7 @@ async function main() {
   await app.register(bookingsRoutes,      { prefix: "/bookings" });
   await app.register(adminRoutes,         { prefix: "/admin" });
   await app.register(conversationsRoutes, { prefix: "/conversations" });
+  await app.register(reviewsRoutes, { prefix: "/reviews" });
 
   app.get("/health", async () => ({ status: "ok" }));
 

@@ -194,7 +194,7 @@ model Booking {
   conversation Conversation?
   proposal     Proposal?     @relation("AcceptedProposal")
   payment      Payment?
-  review       Review?
+  reviews      Review[]
 
   @@index([clientId])
   @@index([status])
@@ -283,7 +283,7 @@ model Review {
   visible   Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  bookingId String  @unique
+  bookingId String
   booking   Booking @relation(fields: [bookingId], references: [id])
 
   authorId String
@@ -292,6 +292,7 @@ model Review {
   targetId String
   target   User   @relation("ReviewTarget", fields: [targetId], references: [id])
 
+  @@unique([bookingId, authorId])
   @@index([targetId])
   @@index([visible])
 }
