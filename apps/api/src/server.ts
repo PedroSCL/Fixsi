@@ -8,6 +8,7 @@ import { authRoutes } from "./routes/auth";
 import { servicesRoutes } from "./routes/services";
 import { adminRoutes } from "./routes/admin";
 import { toolsRoutes } from "./routes/tools";
+import { bookingsRoutes } from "./routes/bookings";
 
 const app = Fastify({ logger: true });
 
@@ -29,8 +30,10 @@ async function main() {
 
   await app.register(authRoutes, { prefix: "/auth" });
   await app.register(servicesRoutes, { prefix: "/services" });
-  await app.register(toolsRoutes, { prefix: "/tools" });
+
   await app.register(adminRoutes, { prefix: "/admin" });
+  await app.register(toolsRoutes, { prefix: "/tools" });
+  await app.register(bookingsRoutes, { prefix: "/bookings" });
 
   app.get("/health", async () => {
     return { status: "ok" };
