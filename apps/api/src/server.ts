@@ -45,7 +45,10 @@ async function main() {
   app.get("/health", async () => ({ status: "ok" }));
 
   // Precisa fazer o listen antes de pegar o httpServer
-  await app.listen({ port: 3001, host: "0.0.0.0" });
+  await app.listen({ 
+  port: Number(process.env.PORT) || 3001, 
+  host: "0.0.0.0" 
+});
 
   // Configura o Socket.io usando o servidor HTTP do Fastify
   setupSocket(
