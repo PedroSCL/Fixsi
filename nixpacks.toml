@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm install -g pnpm", "pnpm install"]
+
+[phases.build]
+cmds = ["cd apps/api && pnpm build && cd ../../packages/database && npx prisma generate"]
+
+[start]
+cmd = "cd apps/api && pnpm start"
