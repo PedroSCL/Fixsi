@@ -2,11 +2,9 @@
   "name": "fixsi",
   "private": true,
   "scripts": {
-  "test": "echo \"Error: no test specified\" && exit 1",
-  "dev": "tsx watch src/server.ts",
-  "build": "tsc",
-  "start": "node dist/server.js"
-},
+    "build": "turbo build",
+    "dev": "turbo dev"
+  },
   "devDependencies": {
     "prettier": "^3.7.4",
     "turbo": "^2.10.0",
@@ -14,6 +12,7 @@
   },
   "packageManager": "pnpm@9.0.0",
   "engines": {
-    "node": ">=18"
+    "node": ">=18",
+    "pnpm": ">=9"
   }
 }
