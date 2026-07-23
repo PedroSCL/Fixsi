@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "nodePackages.pnpm"]
+
+[phases.install]
+cmds = ["pnpm install"]
+
+[phases.build]
+cmds = ["pnpm build && cd ../../packages/database && npx prisma generate"]
+
+[start]
+cmd = "node dist/server.js"
