@@ -12,10 +12,12 @@ import { adminRoutes } from "./routes/admin";
 import { conversationsRoutes } from "./routes/conversations";
 import { setupSocket } from "./lib/socket";
 import { reviewsRoutes } from "./routes/reviews";
+import { paymentsRoutes } from "./routes/payments";
 
 const app = Fastify({ logger: true });
 
 async function main() {
+  
   await app.register(helmet);
 
   await app.register(rateLimit, {
@@ -38,6 +40,7 @@ async function main() {
   await app.register(adminRoutes,         { prefix: "/admin" });
   await app.register(conversationsRoutes, { prefix: "/conversations" });
   await app.register(reviewsRoutes, { prefix: "/reviews" });
+  await app.register(paymentsRoutes, { prefix: "/payments" });
 
   app.get("/health", async () => ({ status: "ok" }));
 
