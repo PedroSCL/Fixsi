@@ -64,7 +64,7 @@ export async function paymentsRoutes(app: FastifyInstance) {
       const client = booking.client;
 
       // Cria ou recupera o cliente no Asaas
-      let asaasCustomerId = client.asaasWalletId;
+      let asaasCustomerId = client.asaasWalletId ?? "";
 
       if (!asaasCustomerId) {
         const customer = await createAsaasCustomer({

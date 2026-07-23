@@ -2,12 +2,11 @@
   "name": "fixsi",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
-  },
+  "test": "echo \"Error: no test specified\" && exit 1",
+  "dev": "tsx watch src/server.ts",
+  "build": "tsc",
+  "start": "node dist/server.js"
+},
   "devDependencies": {
     "prettier": "^3.7.4",
     "turbo": "^2.10.0",

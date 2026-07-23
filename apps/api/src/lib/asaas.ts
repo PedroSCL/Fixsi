@@ -6,13 +6,32 @@ const headers = {
   "Content-Type": "application/json",
 };
 
-// Cria um cliente no Asaas (necessário antes de criar cobrança)
+interface AsaasCustomer {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface AsaasCharge {
+  id: string;
+  value: number;
+  status: string;
+  billingType: string;
+  invoiceUrl: string;
+}
+
+interface AsaasQrCode {
+  encodedImage: string;
+  payload: string;
+  expirationDate: string;
+}
+
 export async function createAsaasCustomer(user: {
   name: string;
   email: string;
   cpf: string;
   phone: string;
-}) {
+}): Promise<AsaasCustomer> {
   const res = await fetch(`${ASAAS_URL}/customers`, {
     method: "POST",
     headers,
@@ -23,16 +42,15 @@ export async function createAsaasCustomer(user: {
       mobilePhone: user.phone,
     }),
   });
-  return res.json();
+  return res.json() as Promise<AsaasCustomer>;
 }
 
-// Cria cobrança PIX
 export async function createPixCharge(data: {
   customerId: string;
   amount: number;
   description: string;
-  externalReference: string; // ID do booking
-}) {
+  externalReference: string;
+}): Promise<AsaasCharge> {
   const res = await fetch(`${ASAAS_URL}/payments`, {
     method: "POST",
     headers,
@@ -42,27 +60,21 @@ export async function createPixCharge(data: {
       value: data.amount,
       dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
         .toISOString()
-        .split("T")[0], // vence amanhã
+        .split("T")[0],
       description: data.description,
       externalReference: data.externalReference,
     }),
   });
-  return res.json();
+  return res.json() as Promise<AsaasCharge>;
 }
 
-// Busca o QR Code PIX de uma cobrança
-export async function getPixQrCode(paymentId: string) {
+export async function getPixQrCode(paymentId: string): Promise<AsaasQrCode> {
   const res = await fetch(`${ASAAS_URL}/payments/${paymentId}/pixQrCode`, {
     headers,
   });
-  return res.json();
+  return res.json() as Promise<AsaasQrCode>;
 }
 
-// Libera pagamento (transfere pro profissional)
-// No sandbox isso é simulado
 export async function releasePayment(paymentId: string) {
-  // No modelo do Fixsi, a liberação é feita via transferência
-  // entre contas Asaas após confirmação do cliente
-  // Por enquanto retorna true — implementação completa na fase de escrow
   return { success: true, paymentId };
 }
