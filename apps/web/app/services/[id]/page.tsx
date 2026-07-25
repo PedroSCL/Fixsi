@@ -189,7 +189,7 @@ export default function ServiceDetailPage() {
               className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold"
               style={{ backgroundColor: "#F97316" }}
             >
-              {service.user.name[0].toUpperCase()}
+              {(service.user.name?.[0] ?? "?").toUpperCase()}
             </div>
             <div className="text-center">
               <h3 className="font-bold" style={{ color: "#1E3A5F" }}>
