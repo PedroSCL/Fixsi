@@ -1,27 +1,138 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 :root {
-  --color-primary: #F97316;
-  --color-primary-dark: #EA6C0A;
-  --color-secondary: #1E3A5F;
-  --color-secondary-light: #2D5A8E;
-  --color-cream: #FFF8F1;
+  --serveo-primary: #f97316;
+  --serveo-primary-hover: #ea580c;
+  --serveo-primary-soft: #fff1e8;
+  --serveo-secondary: #274060;
+  --serveo-accent: #ffb15a;
+  --serveo-bg: #f8f7f4;
+  --serveo-surface: #ffffff;
+  --serveo-text: #17233b;
+  --serveo-muted: #667085;
+  --serveo-border: #e7e2da;
+  --serveo-success: #15803d;
+  --serveo-warning: #b45309;
+  --serveo-danger: #dc2626;
+  --serveo-shadow: 0 16px 45px rgba(23, 35, 59, 0.09);
 }
 
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { color: #1E3A5F; background: var(--color-cream); font-family: "Manrope", Arial, sans-serif; }
-button, a, input { transition: all 160ms ease; }
-button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid rgba(249, 115, 22, .3); outline-offset: 2px; }
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  min-height: 100vh;
+  color: var(--serveo-text);
+  background: var(--serveo-bg);
+  font-family: "Manrope", Arial, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+button,
+a,
+input,
+textarea,
+select {
+  transition: 160ms ease;
+}
+button,
+select {
+  cursor: pointer;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.24);
+  outline-offset: 2px;
+}
 
-/* O seletor nativo passa a responder ao clique em toda a área do campo. */
+.page-shell {
+  width: min(1180px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+.surface-card {
+  border: 1px solid var(--serveo-border);
+  border-radius: 1.25rem;
+  background: var(--serveo-surface);
+  box-shadow: 0 8px 28px rgba(23, 35, 59, 0.06);
+}
+.eyebrow {
+  color: var(--serveo-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border-radius: 0.8rem;
+  background: var(--serveo-primary);
+  padding: 0.7rem 1.15rem;
+  color: white;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.2);
+}
+.btn-primary:hover {
+  background: var(--serveo-primary-hover);
+  transform: translateY(-1px);
+}
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--serveo-border);
+  border-radius: 0.8rem;
+  background: white;
+  padding: 0.7rem 1.15rem;
+  color: var(--serveo-text);
+  font-weight: 800;
+}
+.btn-secondary:hover {
+  border-color: #efb67d;
+  background: var(--serveo-primary-soft);
+}
+.field {
+  width: 100%;
+  border: 1px solid var(--serveo-border);
+  border-radius: 0.8rem;
+  background: #fcfbf9;
+  padding: 0.78rem 1rem;
+  color: var(--serveo-text);
+  font-weight: 600;
+  outline: none;
+}
+.field-with-leading {
+  padding-left: 2.85rem;
+}
+.field-with-actions {
+  padding-left: 2.6rem;
+  padding-right: 2.85rem;
+}
+.field::placeholder {
+  color: #98a2b3;
+  font-weight: 500;
+}
+.field:focus {
+  border-color: var(--serveo-primary);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
+}
+
 input[type="date"] {
   cursor: pointer;
-  font-weight: 600;
-  letter-spacing: .01em;
+  font-weight: 700;
 }
-
 input[type="date"]::-webkit-calendar-picker-indicator {
   position: absolute;
   inset: 0;
@@ -31,21 +142,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0;
 }
 
-input[type="date"]::-webkit-datetime-edit {
-  color: #1E3A5F;
-}
-
-/* Mantém o card principal da home limpo e com foco na chamada de ação. */
-img[src="/img/tools-illustration.png"] {
-  display: none;
-}
-
-/* Substitui o arquivo original (com muita margem transparente) pela versão recortada. */
-/* Usa a mesma presença visual da marca nos painéis laterais de autenticação. */
-aside > img[src="/img/logofixsi.png"] {
-  content: url("/img/logofixsi-horizontal-tight.png");
-  height: 3.5rem;
-  width: auto;
-  padding: .35rem .65rem;
-  transform: none;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

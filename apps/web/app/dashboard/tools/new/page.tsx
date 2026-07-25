@@ -4,24 +4,23 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  BriefcaseBusiness,
   CircleDollarSign,
+  Drill,
   FileText,
+  ShieldCheck,
   Tag,
 } from "lucide-react";
 import { api, apiErrorMessage } from "../../../lib/api";
 const CATEGORIES = [
-  "Elétrica",
-  "Hidráulica",
-  "Marcenaria",
-  "Pintura",
-  "Limpeza",
+  "Furadeiras",
+  "Serras",
+  "Construção",
   "Jardinagem",
-  "Informática",
-  "Reformas",
+  "Pintura",
+  "Escadas",
   "Outros",
 ];
-export default function NewServicePage() {
+export default function NewToolPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false),
     [error, setError] = useState("");
@@ -29,7 +28,8 @@ export default function NewServicePage() {
     title: "",
     description: "",
     category: "",
-    priceFrom: "",
+    pricePerDay: "",
+    usageRules: "",
   });
   const update = (field: string, value: string) =>
     setForm((p) => ({ ...p, [field]: value }));
@@ -38,15 +38,13 @@ export default function NewServicePage() {
     setError("");
     setLoading(true);
     try {
-      await api.post("/services", {
-        title: form.title,
-        description: form.description,
-        category: form.category,
-        priceFrom: form.priceFrom ? Number(form.priceFrom) : undefined,
+      await api.post("/tools", {
+        ...form,
+        pricePerDay: Number(form.pricePerDay),
       });
-      router.push("/dashboard?success=service");
+      router.push("/dashboard?success=tool");
     } catch (err: unknown) {
-      setError(apiErrorMessage(err, "Não foi possível publicar o serviço"));
+      setError(apiErrorMessage(err, "Não foi possível anunciar a ferramenta"));
     } finally {
       setLoading(false);
     }
@@ -60,18 +58,20 @@ export default function NewServicePage() {
         <ArrowLeft size={17} /> Voltar ao dashboard
       </Link>
       <section className="surface-card mt-6 overflow-hidden">
-        <header className="border-b border-[#E7E2DA] bg-[#F5F2ED] p-7 sm:p-9">
+        <header className="border-b border-[#EADBAE] bg-[#FFF9EA] p-7 sm:p-9">
           <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F97316] text-white">
-              <BriefcaseBusiness size={24} />
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#FFB15A] text-[#17233B]">
+              <Drill size={24} />
             </span>
             <div>
-              <p className="eyebrow">Área profissional</p>
+              <p className="text-xs font-extrabold uppercase tracking-[.14em] text-[#984B00]">
+                Área do locador
+              </p>
               <h1 className="mt-1 text-2xl font-extrabold text-[#17233B]">
-                Publicar serviço
+                Anunciar ferramenta
               </h1>
               <p className="mt-1 text-[#667085]">
-                Apresente seu trabalho de forma clara para novos clientes.
+                Informe o estado, a diária e as regras de uso.
               </p>
             </div>
           </div>
@@ -79,14 +79,14 @@ export default function NewServicePage() {
         <form onSubmit={submit} className="space-y-6 p-7 sm:p-9">
           <label className="block text-sm font-extrabold text-[#17233B]">
             <span className="flex items-center gap-2">
-              <BriefcaseBusiness size={16} className="text-[#F97316]" /> Título
+              <Drill size={16} className="text-[#F97316]" /> Nome da ferramenta
             </span>
             <input
               value={form.title}
               onChange={(e) => update("title", e.target.value)}
               required
               className="field mt-2"
-              placeholder="Ex.: Instalação elétrica residencial"
+              placeholder="Ex.: Furadeira de impacto"
             />
           </label>
           <label className="block text-sm font-extrabold text-[#17233B]">
@@ -97,9 +97,9 @@ export default function NewServicePage() {
               value={form.description}
               onChange={(e) => update("description", e.target.value)}
               required
-              rows={5}
+              rows={4}
               className="field mt-2 resize-none"
-              placeholder="Explique o serviço, sua experiência e diferenciais"
+              placeholder="Marca, modelo, estado de conservação e itens inclusos"
             />
           </label>
           <div className="grid gap-5 sm:grid-cols-2">
@@ -122,7 +122,7 @@ export default function NewServicePage() {
             <label className="block text-sm font-extrabold text-[#17233B]">
               <span className="flex items-center gap-2">
                 <CircleDollarSign size={16} className="text-[#F97316]" /> Valor
-                inicial
+                por dia
               </span>
               <div className="relative mt-2">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-[#667085]">
@@ -130,19 +130,29 @@ export default function NewServicePage() {
                 </span>
                 <input
                   type="number"
-                  min="0"
+                  min="0.01"
                   step="0.01"
-                  value={form.priceFrom}
-                  onChange={(e) => update("priceFrom", e.target.value)}
+                  value={form.pricePerDay}
+                  onChange={(e) => update("pricePerDay", e.target.value)}
+                  required
                   className="field field-with-leading"
                   placeholder="0,00"
                 />
               </div>
             </label>
           </div>
-          <p className="text-xs font-semibold text-[#667085]">
-            O valor final poderá ser negociado pelo chat.
-          </p>
+          <label className="block text-sm font-extrabold text-[#17233B]">
+            <span className="flex items-center gap-2">
+              <ShieldCheck size={16} className="text-[#F97316]" /> Regras de uso
+            </span>
+            <textarea
+              value={form.usageRules}
+              onChange={(e) => update("usageRules", e.target.value)}
+              rows={3}
+              className="field mt-2 resize-none"
+              placeholder="Cuidados, documentos ou caução, se aplicável"
+            />
+          </label>
           {error && (
             <p
               role="alert"
@@ -159,7 +169,7 @@ export default function NewServicePage() {
               disabled={loading}
               className="btn-primary disabled:opacity-60"
             >
-              {loading ? "Publicando..." : "Publicar serviço"}
+              {loading ? "Publicando..." : "Anunciar ferramenta"}
             </button>
           </div>
         </form>

@@ -9,6 +9,12 @@ export const api = axios.create({
   },
 });
 
+export function apiErrorMessage(error: unknown, fallback: string) {
+  return axios.isAxiosError(error)
+    ? error.response?.data?.error || fallback
+    : fallback;
+}
+
 // Interceptor — adiciona o token JWT em toda requisição automaticamente
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
@@ -46,4 +52,19 @@ export interface Service {
 export interface AuthResponse {
   user: User;
   token: string;
+}
+
+export interface Tool {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  pricePerDay: number;
+  usageRules: string | null;
+  images: string[];
+  user: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+  };
 }

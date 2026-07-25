@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../plugins/authenticate";
+import { textVariants } from "../lib/text";
 
 const createServiceSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -36,17 +37,28 @@ export async function servicesRoutes(app: FastifyInstance) {
   // Listar serviços (público)
   app.get("/", async (request, reply) => {
     const { category, search, page, limit } = listServiceSchema.parse(
-      request.query
+      request.query,
     );
 
     const where = {
       approved: true,
       active: true,
-      ...(category && { category }),
+      ...(category && {
+        category: {
+          in: textVariants(category),
+          mode: "insensitive" as const,
+        },
+      }),
       ...(search && {
         OR: [
           { title: { contains: search, mode: "insensitive" as const } },
           { description: { contains: search, mode: "insensitive" as const } },
+          {
+            category: {
+              in: textVariants(search),
+              mode: "insensitive" as const,
+            },
+          },
         ],
       }),
     };
@@ -112,103 +124,91 @@ export async function servicesRoutes(app: FastifyInstance) {
   });
 
   // Criar serviço (autenticado)
-  app.post(
-    "/",
-    { preHandler: [authenticate] },
-    async (request, reply) => {
-      const body = createServiceSchema.parse(request.body);
-      const userId = (request.user as { id: string }).id;
+  app.post("/", { preHandler: [authenticate] }, async (request, reply) => {
+    const body = createServiceSchema.parse(request.body);
+    const userId = (request.user as { id: string }).id;
 
-      // Verifica se tem papel de PROFESSIONAL
-      const role = await prisma.userRole.findUnique({
-        where: { userId_type: { userId, type: "PROFESSIONAL" } },
-      });
+    // Verifica se tem papel de PROFESSIONAL
+    const role = await prisma.userRole.findUnique({
+      where: { userId_type: { userId, type: "PROFESSIONAL" } },
+    });
 
-      if (!role) {
-        return reply.code(403).send({
-          error: "Apenas Profissionais podem criar serviços",
-        });
-      }
-
-      // Verifica se a identidade foi verificada
-      const verification = await prisma.identityVerification.findUnique({
-        where: { userId },
-      });
-
-      // Se verificado, publica direto. Se não, fica pendente.
-      const approved = verification?.status === "APPROVED";
-
-      const service = await prisma.service.create({
-        data: {
-          ...body,
-          userId,
-          approved,
-        },
-      });
-
-      return reply.code(201).send({
-        service,
-        message: approved
-          ? "Serviço publicado com sucesso"
-          : "Serviço criado. Complete a verificação de identidade para publicar.",
+    if (!role) {
+      return reply.code(403).send({
+        error: "Apenas Profissionais podem criar serviços",
       });
     }
-  );
+
+    // Verifica se a identidade foi verificada
+    const verification = await prisma.identityVerification.findUnique({
+      where: { userId },
+    });
+
+    // Se verificado, publica direto. Se não, fica pendente.
+    const approved = verification?.status === "APPROVED";
+
+    const service = await prisma.service.create({
+      data: {
+        ...body,
+        userId,
+        approved,
+      },
+    });
+
+    return reply.code(201).send({
+      service,
+      message: approved
+        ? "Serviço publicado com sucesso"
+        : "Serviço criado. Complete a verificação de identidade para publicar.",
+    });
+  });
 
   // Editar serviço (autenticado, só o dono)
-  app.patch(
-    "/:id",
-    { preHandler: [authenticate] },
-    async (request, reply) => {
-      const { id } = request.params as { id: string };
-      const body = updateServiceSchema.parse(request.body);
-      const userId = (request.user as { id: string }).id;
+  app.patch("/:id", { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = updateServiceSchema.parse(request.body);
+    const userId = (request.user as { id: string }).id;
 
-      const service = await prisma.service.findUnique({ where: { id } });
+    const service = await prisma.service.findUnique({ where: { id } });
 
-      if (!service) {
-        return reply.code(404).send({ error: "Serviço não encontrado" });
-      }
-
-      if (service.userId !== userId) {
-        return reply.code(403).send({ error: "Sem permissão" });
-      }
-
-      const updated = await prisma.service.update({
-        where: { id },
-        data: body,
-      });
-
-      return reply.send({ service: updated });
+    if (!service) {
+      return reply.code(404).send({ error: "Serviço não encontrado" });
     }
-  );
+
+    if (service.userId !== userId) {
+      return reply.code(403).send({ error: "Sem permissão" });
+    }
+
+    const updated = await prisma.service.update({
+      where: { id },
+      data: body,
+    });
+
+    return reply.send({ service: updated });
+  });
 
   // Desativar serviço (autenticado, só o dono)
-  app.delete(
-    "/:id",
-    { preHandler: [authenticate] },
-    async (request, reply) => {
-      const { id } = request.params as { id: string };
-      const userId = (request.user as { id: string }).id;
+  app.delete("/:id", { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = (request.user as { id: string }).id;
 
-      const service = await prisma.service.findUnique({ where: { id } });
+    const service = await prisma.service.findUnique({ where: { id } });
 
-      if (!service) {
-        return reply.code(404).send({ error: "Serviço não encontrado" });
-      }
-
-      if (service.userId !== userId) {
-        return reply.code(403).send({ error: "Sem permissão" });
-      }
-
-      await prisma.service.update({
-        where: { id },
-        data: { active: false },
-      });
-
-      return reply.code(204).send();
+    if (!service) {
+      return reply.code(404).send({ error: "Serviço não encontrado" });
     }
-  );
+
+    if (service.userId !== userId) {
+      return reply.code(403).send({ error: "Sem permissão" });
+    }
+
+    await prisma.service.update({
+      where: { id },
+      data: { active: false },
+    });
+
+    return reply.code(204).send();
+  });
 
   // Denunciar serviço (autenticado)
   app.post(
@@ -226,7 +226,9 @@ export async function servicesRoutes(app: FastifyInstance) {
 
       // Não pode denunciar o próprio serviço
       if (service.userId === userId) {
-        return reply.code(400).send({ error: "Você não pode denunciar seu próprio serviço" });
+        return reply
+          .code(400)
+          .send({ error: "Você não pode denunciar seu próprio serviço" });
       }
 
       // Verifica se já denunciou esse serviço antes
@@ -234,7 +236,9 @@ export async function servicesRoutes(app: FastifyInstance) {
         where: { serviceId: id, reporterId: userId },
       });
       if (existing) {
-        return reply.code(409).send({ error: "Você já denunciou esse serviço" });
+        return reply
+          .code(409)
+          .send({ error: "Você já denunciou esse serviço" });
       }
 
       await prisma.report.create({
@@ -247,6 +251,6 @@ export async function servicesRoutes(app: FastifyInstance) {
       });
 
       return reply.code(201).send({ message: "Denúncia registrada" });
-    }
+    },
   );
 }

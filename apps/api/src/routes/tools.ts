@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../plugins/authenticate";
+import { textVariants } from "../lib/text";
 
 const createToolSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -37,17 +38,28 @@ export async function toolsRoutes(app: FastifyInstance) {
   // Listar ferramentas (público)
   app.get("/", async (request, reply) => {
     const { category, search, page, limit } = listToolSchema.parse(
-      request.query
+      request.query,
     );
 
     const where = {
       approved: true,
       available: true,
-      ...(category && { category }),
+      ...(category && {
+        category: {
+          in: textVariants(category),
+          mode: "insensitive" as const,
+        },
+      }),
       ...(search && {
         OR: [
           { title: { contains: search, mode: "insensitive" as const } },
           { description: { contains: search, mode: "insensitive" as const } },
+          {
+            category: {
+              in: textVariants(search),
+              mode: "insensitive" as const,
+            },
+          },
         ],
       }),
     };
@@ -113,102 +125,90 @@ export async function toolsRoutes(app: FastifyInstance) {
   });
 
   // Criar ferramenta (autenticado)
-  app.post(
-    "/",
-    { preHandler: [authenticate] },
-    async (request, reply) => {
-      const body = createToolSchema.parse(request.body);
-      const userId = (request.user as { id: string }).id;
+  app.post("/", { preHandler: [authenticate] }, async (request, reply) => {
+    const body = createToolSchema.parse(request.body);
+    const userId = (request.user as { id: string }).id;
 
-      // Verifica se tem papel de LOCADOR
-      const role = await prisma.userRole.findUnique({
-        where: { userId_type: { userId, type: "LOCADOR" } },
-      });
+    // Verifica se tem papel de LOCADOR
+    const role = await prisma.userRole.findUnique({
+      where: { userId_type: { userId, type: "LOCADOR" } },
+    });
 
-      if (!role) {
-        return reply.code(403).send({
-          error: "Apenas Locadores podem cadastrar ferramentas",
-        });
-      }
-
-      // Verifica se identidade foi verificada
-      const verification = await prisma.identityVerification.findUnique({
-        where: { userId },
-      });
-
-      const approved = verification?.status === "APPROVED";
-
-      const tool = await prisma.tool.create({
-        data: {
-          ...body,
-          userId,
-          approved,
-        },
-      });
-
-      return reply.code(201).send({
-        tool,
-        message: approved
-          ? "Ferramenta publicada com sucesso"
-          : "Ferramenta criada. Complete a verificação de identidade para publicar.",
+    if (!role) {
+      return reply.code(403).send({
+        error: "Apenas Locadores podem cadastrar ferramentas",
       });
     }
-  );
+
+    // Verifica se identidade foi verificada
+    const verification = await prisma.identityVerification.findUnique({
+      where: { userId },
+    });
+
+    const approved = verification?.status === "APPROVED";
+
+    const tool = await prisma.tool.create({
+      data: {
+        ...body,
+        userId,
+        approved,
+      },
+    });
+
+    return reply.code(201).send({
+      tool,
+      message: approved
+        ? "Ferramenta publicada com sucesso"
+        : "Ferramenta criada. Complete a verificação de identidade para publicar.",
+    });
+  });
 
   // Editar ferramenta (autenticado, só o dono)
-  app.patch(
-    "/:id",
-    { preHandler: [authenticate] },
-    async (request, reply) => {
-      const { id } = request.params as { id: string };
-      const body = updateToolSchema.parse(request.body);
-      const userId = (request.user as { id: string }).id;
+  app.patch("/:id", { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = updateToolSchema.parse(request.body);
+    const userId = (request.user as { id: string }).id;
 
-      const tool = await prisma.tool.findUnique({ where: { id } });
+    const tool = await prisma.tool.findUnique({ where: { id } });
 
-      if (!tool) {
-        return reply.code(404).send({ error: "Ferramenta não encontrada" });
-      }
-
-      if (tool.userId !== userId) {
-        return reply.code(403).send({ error: "Sem permissão" });
-      }
-
-      const updated = await prisma.tool.update({
-        where: { id },
-        data: body,
-      });
-
-      return reply.send({ tool: updated });
+    if (!tool) {
+      return reply.code(404).send({ error: "Ferramenta não encontrada" });
     }
-  );
+
+    if (tool.userId !== userId) {
+      return reply.code(403).send({ error: "Sem permissão" });
+    }
+
+    const updated = await prisma.tool.update({
+      where: { id },
+      data: body,
+    });
+
+    return reply.send({ tool: updated });
+  });
 
   // Desativar ferramenta (autenticado, só o dono)
-  app.delete(
-    "/:id",
-    { preHandler: [authenticate] },
-    async (request, reply) => {
-      const { id } = request.params as { id: string };
-      const userId = (request.user as { id: string }).id;
+  app.delete("/:id", { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = (request.user as { id: string }).id;
 
-      const tool = await prisma.tool.findUnique({ where: { id } });
+    const tool = await prisma.tool.findUnique({ where: { id } });
 
-      if (!tool) {
-        return reply.code(404).send({ error: "Ferramenta não encontrada" });
-      }
-
-      if (tool.userId !== userId) {
-        return reply.code(403).send({ error: "Sem permissão" });
-      }
-
-      await prisma.tool.update({
-        where: { id },
-        data: { available: false },
-      });
-
-      return reply.code(204).send();
+    if (!tool) {
+      return reply.code(404).send({ error: "Ferramenta não encontrada" });
     }
-  );
+
+    if (tool.userId !== userId) {
+      return reply.code(403).send({ error: "Sem permissão" });
+    }
+
+    await prisma.tool.update({
+      where: { id },
+      data: { available: false },
+    });
+
+    return reply.code(204).send();
+  });
 
   // Denunciar ferramenta (autenticado)
   app.post(
@@ -249,6 +249,6 @@ export async function toolsRoutes(app: FastifyInstance) {
       });
 
       return reply.code(201).send({ message: "Denúncia registrada" });
-    }
+    },
   );
 }

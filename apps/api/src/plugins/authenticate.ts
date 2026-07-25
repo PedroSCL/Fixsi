@@ -5,7 +5,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 // e se for válido, coloca os dados do usuário em request.user
 export async function authenticate(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     await request.jwtVerify();

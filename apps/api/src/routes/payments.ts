@@ -91,12 +91,12 @@ export async function paymentsRoutes(app: FastifyInstance) {
 
       // Cria a cobrança PIX
       const title =
-        booking.service?.title || booking.tool?.title || "Serviço Fixsi";
+        booking.service?.title || booking.tool?.title || "Serviço Serveo";
 
       const charge = await createPixCharge({
         customerId: asaasCustomerId,
         amount: Number(booking.proposal.amount),
-        description: `Fixsi - ${title}`,
+        description: `Serveo - ${title}`,
         externalReference: booking.id,
       });
 
@@ -138,7 +138,7 @@ export async function paymentsRoutes(app: FastifyInstance) {
           status: payment.status,
         },
       });
-    }
+    },
   );
 
   // Webhook do Asaas — chamado quando o PIX é pago
@@ -229,14 +229,15 @@ export async function paymentsRoutes(app: FastifyInstance) {
       // Só libera se o booking estiver concluído
       if (payment.booking.status !== "COMPLETED") {
         return reply.code(400).send({
-          error: "O serviço precisa estar concluído antes de liberar o pagamento",
+          error:
+            "O serviço precisa estar concluído antes de liberar o pagamento",
         });
       }
 
       // Verifica se ambos avaliaram
       const reviews = payment.booking.reviews;
       const clientReview = reviews.find(
-        (r) => r.authorId === payment.booking.clientId
+        (r) => r.authorId === payment.booking.clientId,
       );
       const providerId =
         payment.booking.service?.userId || payment.booking.tool?.userId;
@@ -244,7 +245,8 @@ export async function paymentsRoutes(app: FastifyInstance) {
 
       if (!clientReview || !providerReview) {
         return reply.code(400).send({
-          error: "Ambas as partes precisam avaliar antes de liberar o pagamento",
+          error:
+            "Ambas as partes precisam avaliar antes de liberar o pagamento",
         });
       }
 
@@ -260,6 +262,6 @@ export async function paymentsRoutes(app: FastifyInstance) {
       return reply.send({
         message: "Pagamento liberado para o profissional com sucesso",
       });
-    }
+    },
   );
 }

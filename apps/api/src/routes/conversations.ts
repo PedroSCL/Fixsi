@@ -10,54 +10,49 @@ const sendMessageSchema = z.object({
 
 export async function conversationsRoutes(app: FastifyInstance) {
   // Buscar histórico de mensagens de uma conversa
-  app.get(
-    "/:id",
-    { preHandler: [authenticate] },
-    async (request, reply) => {
-      const { id } = request.params as { id: string };
-      const userId = (request.user as { id: string }).id;
+  app.get("/:id", { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = (request.user as { id: string }).id;
 
-      const conversation = await prisma.conversation.findUnique({
-        where: { id },
-        include: {
-          booking: {
-            include: {
-              service: { select: { userId: true, title: true } },
-              tool: { select: { userId: true, title: true } },
-              client: { select: { id: true, name: true, avatarUrl: true } },
-            },
-          },
-          messages: {
-            include: {
-              sender: {
-                select: { id: true, name: true, avatarUrl: true },
-              },
-            },
-            orderBy: { createdAt: "asc" },
-          },
-          proposals: {
-            orderBy: { createdAt: "desc" },
+    const conversation = await prisma.conversation.findUnique({
+      where: { id },
+      include: {
+        booking: {
+          include: {
+            service: { select: { userId: true, title: true } },
+            tool: { select: { userId: true, title: true } },
+            client: { select: { id: true, name: true, avatarUrl: true } },
           },
         },
-      });
+        messages: {
+          include: {
+            sender: {
+              select: { id: true, name: true, avatarUrl: true },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        },
+        proposals: {
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
 
-      if (!conversation) {
-        return reply.code(404).send({ error: "Conversa não encontrada" });
-      }
-
-      // Verifica permissão
-      const clientId = conversation.booking.clientId;
-      const providerId =
-        conversation.booking.service?.userId ||
-        conversation.booking.tool?.userId;
-
-      if (userId !== clientId && userId !== providerId) {
-        return reply.code(403).send({ error: "Sem permissão" });
-      }
-
-      return reply.send({ conversation });
+    if (!conversation) {
+      return reply.code(404).send({ error: "Conversa não encontrada" });
     }
-  );
+
+    // Verifica permissão
+    const clientId = conversation.booking.clientId;
+    const providerId =
+      conversation.booking.service?.userId || conversation.booking.tool?.userId;
+
+    if (userId !== clientId && userId !== providerId) {
+      return reply.code(403).send({ error: "Sem permissão" });
+    }
+
+    return reply.send({ conversation });
+  });
 
   // Enviar mensagem via HTTP (alternativa ao WebSocket)
   app.post(
@@ -108,6 +103,6 @@ export async function conversationsRoutes(app: FastifyInstance) {
       });
 
       return reply.code(201).send({ message });
-    }
+    },
   );
 }

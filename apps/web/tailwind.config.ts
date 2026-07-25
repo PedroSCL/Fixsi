@@ -9,14 +9,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: "#F97316",
-        "primary-dark": "#EA6C0A",
-        secondary: "#1E3A5F",
-        "secondary-light": "#2D5A8E",
+        brand: { DEFAULT: "#F97316", dark: "#EA580C", soft: "#FFF1E8" },
+        ink: "#17233B",
+        muted: "#667085",
+        line: "#E7E2DA",
+        accent: "#FFB15A",
       },
     },
   },
   plugins: [],
 };
-
 export default config;

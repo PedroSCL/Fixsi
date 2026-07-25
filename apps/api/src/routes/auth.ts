@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
+import { authenticate } from "../plugins/authenticate";
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -11,7 +12,10 @@ const registerSchema = z.object({
     .min(8, "Senha deve ter no mínimo 8 caracteres")
     .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
     .regex(/[0-9]/, "Senha deve conter pelo menos um número")
-    .regex(/[^a-zA-Z0-9]/, "Senha deve conter pelo menos um caractere especial"),
+    .regex(
+      /[^a-zA-Z0-9]/,
+      "Senha deve conter pelo menos um caractere especial",
+    ),
   phone: z.string().min(10, "Telefone inválido"),
   cpf: z.string().length(11, "CPF deve ter 11 dígitos"),
   role: z.enum(["CLIENT", "PROFESSIONAL", "LOCADOR"]).default("CLIENT"),
@@ -20,6 +24,14 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+});
+
+const updateProfileSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  phone: z.string().trim().min(10).max(15),
+  avatarUrl: z
+    .union([z.string().trim().url(), z.literal(""), z.null()])
+    .optional(),
 });
 
 export async function authRoutes(app: FastifyInstance) {
@@ -76,6 +88,7 @@ export async function authRoutes(app: FastifyInstance) {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        roles: [body.role],
       },
       token,
     });
@@ -111,4 +124,69 @@ export async function authRoutes(app: FastifyInstance) {
       token,
     });
   });
+
+  app.get("/me", { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = (request.user as { id: string }).id;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        avatarUrl: true,
+        createdAt: true,
+        roles: {
+          where: { active: true },
+          select: { type: true },
+        },
+      },
+    });
+
+    if (!user) {
+      return reply.code(404).send({ error: "Usuário não encontrado" });
+    }
+
+    return reply.send({
+      user: {
+        ...user,
+        roles: user.roles.map((role) => role.type),
+      },
+    });
+  });
+
+  app.patch(
+    "/profile",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const userId = (request.user as { id: string }).id;
+      const body = updateProfileSchema.parse(request.body);
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name: body.name,
+          phone: body.phone,
+          avatarUrl: body.avatarUrl || null,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          avatarUrl: true,
+          roles: {
+            where: { active: true },
+            select: { type: true },
+          },
+        },
+      });
+
+      return reply.send({
+        user: {
+          ...user,
+          roles: user.roles.map((role) => role.type),
+        },
+      });
+    },
+  );
 }

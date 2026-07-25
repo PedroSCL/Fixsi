@@ -31,7 +31,7 @@ export async function adminRoutes(app: FastifyInstance) {
       });
 
       return reply.send({ reports });
-    }
+    },
   );
 
   // Desativar serviço denunciado
@@ -52,7 +52,28 @@ export async function adminRoutes(app: FastifyInstance) {
       });
 
       return reply.send({ message: "Serviço desativado" });
-    }
+    },
+  );
+
+  app.patch(
+    "/tools/:id/deactivate",
+    { preHandler: [requireAdmin] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+
+      await prisma.$transaction([
+        prisma.tool.update({
+          where: { id },
+          data: { available: false },
+        }),
+        prisma.report.updateMany({
+          where: { toolId: id, status: "OPEN" },
+          data: { status: "REVIEWED" },
+        }),
+      ]);
+
+      return reply.send({ message: "Ferramenta desativada" });
+    },
   );
 
   // Dispensar denúncia (serviço está ok)
@@ -68,6 +89,6 @@ export async function adminRoutes(app: FastifyInstance) {
       });
 
       return reply.send({ message: "Denúncia dispensada" });
-    }
+    },
   );
 }

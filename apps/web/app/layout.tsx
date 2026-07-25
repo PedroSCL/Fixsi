@@ -3,8 +3,8 @@ import "./globals.css";
 import { Navbar } from "./components/Navbar";
 
 export const metadata: Metadata = {
-  title: "Fixsi — Serviços e Ferramentas",
-  description: "Contrate serviços autônomos e alugue ferramentas com segurança",
+  title: { default: "Serveo", template: "%s | Serveo" },
+  description: "Encontre profissionais e contrate serviços com confiança.",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className="min-h-screen">
+      <body>
         <Navbar />
         {children}
       </body>

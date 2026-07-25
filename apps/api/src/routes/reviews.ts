@@ -38,8 +38,7 @@ export async function reviewsRoutes(app: FastifyInstance) {
         });
       }
 
-      const providerId =
-        booking.service?.userId || booking.tool?.userId;
+      const providerId = booking.service?.userId || booking.tool?.userId;
 
       // Só o cliente ou o profissional/locador podem avaliar
       const isClient = booking.clientId === userId;
@@ -99,39 +98,36 @@ export async function reviewsRoutes(app: FastifyInstance) {
           ? "Avaliação publicada! Você já pode ver a avaliação que recebeu."
           : "Avaliação registrada. Ela ficará visível quando a outra parte também avaliar.",
       });
-    }
+    },
   );
 
   // Ver avaliações de um usuário (público)
-  app.get(
-    "/users/:userId/reviews",
-    async (request, reply) => {
-      const { userId } = request.params as { userId: string };
+  app.get("/users/:userId/reviews", async (request, reply) => {
+    const { userId } = request.params as { userId: string };
 
-      const reviews = await prisma.review.findMany({
-        where: {
-          targetId: userId,
-          visible: true,
+    const reviews = await prisma.review.findMany({
+      where: {
+        targetId: userId,
+        visible: true,
+      },
+      include: {
+        author: {
+          select: { id: true, name: true, avatarUrl: true },
         },
-        include: {
-          author: {
-            select: { id: true, name: true, avatarUrl: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-      // Calcula a média de avaliações
-      const average =
-        reviews.length > 0
-          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-          : 0;
+    // Calcula a média de avaliações
+    const average =
+      reviews.length > 0
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+        : 0;
 
-      return reply.send({
-        reviews,
-        average: Math.round(average * 10) / 10,
-        total: reviews.length,
-      });
-    }
-  );
+    return reply.send({
+      reviews,
+      average: Math.round(average * 10) / 10,
+      total: reviews.length,
+    });
+  });
 }

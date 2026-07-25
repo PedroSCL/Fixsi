@@ -2,7 +2,10 @@ import { Server as SocketServer } from "socket.io";
 import { Server as HttpServer } from "http";
 import { prisma } from "./prisma";
 
-export function setupSocket(httpServer: HttpServer, jwt: { verify: (token: string) => unknown }) {
+export function setupSocket(
+  httpServer: HttpServer,
+  jwt: { verify: (token: string) => unknown },
+) {
   const io = new SocketServer(httpServer, {
     cors: {
       origin: process.env.FRONTEND_URL || "http://localhost:3000",
@@ -72,7 +75,11 @@ export function setupSocket(httpServer: HttpServer, jwt: { verify: (token: strin
     // Enviar mensagem
     socket.on(
       "send_message",
-      async (data: { conversationId: string; content: string; imageUrl?: string }) => {
+      async (data: {
+        conversationId: string;
+        content: string;
+        imageUrl?: string;
+      }) => {
         const { conversationId, content, imageUrl } = data;
 
         if (!content?.trim() && !imageUrl) {
@@ -108,7 +115,7 @@ export function setupSocket(httpServer: HttpServer, jwt: { verify: (token: strin
         } catch {
           socket.emit("error", { message: "Erro ao enviar mensagem" });
         }
-      }
+      },
     );
 
     // Usuário está digitando — feedback visual no chat

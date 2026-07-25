@@ -2,7 +2,7 @@ const ASAAS_URL = "https://sandbox.asaas.com/api/v3";
 const ASAAS_KEY = process.env.ASAAS_API_KEY!;
 
 const headers = {
-  "access_token": ASAAS_KEY,
+  access_token: ASAAS_KEY,
   "Content-Type": "application/json",
 };
 

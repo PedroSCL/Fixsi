@@ -1,8 +1,278 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- imagens dos anúncios vêm de URLs cadastradas pelos usuários */
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, MessageCircle, Star, Wrench } from "lucide-react";
-import { api } from "../../lib/api";
-interface ServiceDetail{id:string;title:string;description:string;category:string;priceFrom:number|null;images:string[];user:{id:string;name:string;reviewsReceived:{rating:number;comment:string}[]}}
-export default function ServiceDetailPage(){const{id}=useParams(),router=useRouter(),dateRef=useRef<HTMLInputElement>(null);const[service,setService]=useState<ServiceDetail|null>(null),[loading,setLoading]=useState(true),[booking,setBooking]=useState(false),[startDate,setStartDate]=useState(""),[success,setSuccess]=useState(false),[error,setError]=useState("");useEffect(()=>{(async()=>{try{setService((await api.get(`/services/${id}`)).data.service)}catch(e){console.error(e)}finally{setLoading(false)}})()},[id]);async function book(){if(!localStorage.getItem("fixsi_token")){router.push("/login");return}if(!startDate){setError("Selecione uma data para o serviço");return}setBooking(true);setError("");try{await api.post("/bookings",{serviceId:id,startDate});setSuccess(true)}catch(e:any){setError(e.response?.data?.error||"Erro ao solicitar serviço")}finally{setBooking(false)}}if(loading)return <div className="flex min-h-96 items-center justify-center text-slate-500">Carregando...</div>;if(!service)return <div className="flex min-h-96 flex-col items-center justify-center gap-4">Serviço não encontrado<Link href="/services" className="font-bold text-orange-600">Voltar para serviços</Link></div>;const reviews=service.user.reviewsReceived,avg=reviews.length?reviews.reduce((s,r)=>s+r.rating,0)/reviews.length:0,formatted=startDate?startDate.split("-").reverse().join("/"):"dd/mm/aaaa";return <main className="mx-auto max-w-6xl px-6 py-10"><Link href="/services" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-orange-600"><ArrowLeft size={17}/> Voltar para serviços</Link><div className="mt-7 grid gap-8 lg:grid-cols-[1fr_340px]"><section><div className="overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-sm"><div className="relative flex h-72 items-center justify-center bg-orange-50 sm:h-96">{service.images?.[0]?<img src={service.images[0]} alt={service.title} className="h-full w-full object-cover"/>:<><img src="/img/ferramentas.png" alt="Ferramentas" className="h-full w-full object-cover opacity-25"/><Wrench className="absolute text-orange-500" size={54}/></>}</div><div className="p-7 sm:p-9"><span className="rounded-full bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-600">{service.category}</span><h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[#1E3A5F]">{service.title}</h1><p className="mt-4 leading-7 text-slate-600">{service.description}</p></div></div>{reviews.length>0&&<section className="mt-7"><h2 className="text-xl font-extrabold text-[#1E3A5F]">Avaliações <span className="text-slate-400">({reviews.length})</span></h2><div className="mt-4 space-y-3">{reviews.map((r,i)=><article key={i} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"><div className="flex gap-1">{Array.from({length:5}).map((_,j)=><Star key={j} size={15} fill={j<r.rating?"#F97316":"none"} stroke={j<r.rating?"#F97316":"#CBD5E1"}/>)}</div>{r.comment&&<p className="mt-3 text-sm leading-6 text-slate-600">{r.comment}</p>}</article>)}</div></section>}</section><aside className="space-y-4"><section className="rounded-3xl border border-orange-100 bg-white p-6 text-center shadow-sm"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-orange-500 text-2xl font-bold text-white">{service.user.name[0]?.toUpperCase()||"?"}</span><h2 className="mt-3 font-bold text-[#1E3A5F]">{service.user.name}</h2>{avg>0&&<p className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-slate-600"><Star size={16} fill="#F97316" stroke="#F97316"/>{avg.toFixed(1)} <span className="font-medium text-slate-400">({reviews.length})</span></p>}</section><section className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">{service.priceFrom&&<div className="mb-5 border-b border-slate-100 pb-5"><p className="text-sm font-medium text-slate-500">A partir de</p><p className="mt-1 text-3xl font-extrabold text-orange-500">R$ {Number(service.priceFrom).toFixed(2)}</p></div>}{success?<div className="text-center"><span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">✓</span><h3 className="mt-3 font-bold text-[#1E3A5F]">Solicitação enviada!</h3><p className="mt-2 text-sm text-slate-600">Negocie os detalhes diretamente pelo chat.</p><Link href="/dashboard/messages" className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-orange-500 py-3 font-bold text-white"><MessageCircle size={17}/> Ver mensagens</Link></div>:<><label className="block text-sm font-bold text-[#1E3A5F]">Data do serviço</label><button type="button" onClick={()=>dateRef.current?.showPicker()} className="relative mt-2 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left font-semibold text-[#1E3A5F] hover:border-orange-300 hover:bg-white"><CalendarDays size={18} className="text-orange-500"/><span className={startDate?"":"text-slate-400"}>{formatted}</span><span className="ml-auto text-xs font-bold text-orange-600">Selecionar</span><input ref={dateRef} type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} min={new Date().toISOString().split("T")[0]} className="pointer-events-none absolute h-px w-px opacity-0" tabIndex={-1}/></button>{error&&<p className="mt-3 text-center text-sm font-medium text-red-600">{error}</p>}<button onClick={book} disabled={booking} className="mt-5 w-full rounded-xl bg-orange-500 py-3.5 font-bold text-white shadow-md shadow-orange-200 hover:bg-orange-600 disabled:opacity-60">{booking?"Solicitando...":"Solicitar orçamento"}</button></>}</section></aside></div></main>}
+import {
+  ArrowLeft,
+  CalendarDays,
+  Check,
+  MessageCircle,
+  ShieldCheck,
+  Star,
+  Wrench,
+} from "lucide-react";
+import { api, apiErrorMessage } from "../../lib/api";
+interface ServiceDetail {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  priceFrom: number | null;
+  images: string[];
+  user: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    reviewsReceived: { rating: number; comment: string; createdAt: string }[];
+  };
+}
+export default function ServiceDetailPage() {
+  const { id } = useParams(),
+    router = useRouter(),
+    dateRef = useRef<HTMLInputElement>(null);
+  const [service, setService] = useState<ServiceDetail | null>(null),
+    [loading, setLoading] = useState(true),
+    [booking, setBooking] = useState(false),
+    [startDate, setStartDate] = useState(""),
+    [success, setSuccess] = useState(false),
+    [error, setError] = useState("");
+  useEffect(() => {
+    (async () => {
+      try {
+        setService((await api.get(`/services/${id}`)).data.service);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
+  async function book() {
+    if (!localStorage.getItem("fixsi_token")) {
+      router.push("/login");
+      return;
+    }
+    if (!startDate) {
+      setError("Selecione uma data para continuar");
+      return;
+    }
+    setBooking(true);
+    setError("");
+    try {
+      await api.post("/bookings", { serviceId: id, startDate });
+      setSuccess(true);
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err, "Não foi possível enviar a solicitação"));
+    } finally {
+      setBooking(false);
+    }
+  }
+  if (loading)
+    return (
+      <div className="flex min-h-96 items-center justify-center text-[#667085]">
+        Carregando serviço...
+      </div>
+    );
+  if (!service)
+    return (
+      <div className="flex min-h-96 flex-col items-center justify-center gap-4">
+        <h1 className="text-xl font-extrabold">Serviço não encontrado</h1>
+        <Link href="/services" className="btn-secondary">
+          Voltar para profissionais
+        </Link>
+      </div>
+    );
+  const reviews = service.user.reviewsReceived,
+    avg = reviews.length
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0,
+    formatted = startDate
+      ? startDate.split("-").reverse().join("/")
+      : "Escolha uma data";
+  return (
+    <main className="page-shell py-10">
+      <Link
+        href="/services"
+        className="inline-flex items-center gap-2 text-sm font-bold text-[#667085] hover:text-[#F97316]"
+      >
+        <ArrowLeft size={17} /> Voltar para profissionais
+      </Link>
+      <div className="mt-7 grid gap-7 lg:grid-cols-[1fr_340px]">
+        <div>
+          <article className="surface-card overflow-hidden">
+            <div className="relative flex h-72 items-center justify-center overflow-hidden bg-[#FFF1E8] sm:h-96">
+              {service.images?.[0] ? (
+                <img
+                  src={service.images[0]}
+                  alt={service.title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <>
+                  <img
+                    src="/img/ferramentas.png"
+                    alt=""
+                    className="h-full w-full object-cover opacity-25"
+                  />
+                  <Wrench className="absolute text-[#F97316]" size={52} />
+                </>
+              )}
+            </div>
+            <div className="p-7 sm:p-9">
+              <span className="rounded-full bg-[#FFF1E8] px-3 py-1.5 text-xs font-extrabold text-[#F97316]">
+                {service.category}
+              </span>
+              <h1 className="mt-4 text-3xl font-extrabold tracking-[-.035em] text-[#17233B]">
+                {service.title}
+              </h1>
+              <p className="mt-4 leading-7 text-[#667085]">
+                {service.description}
+              </p>
+            </div>
+          </article>
+          {reviews.length > 0 && (
+            <section className="mt-8">
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="eyebrow">Experiências reais</p>
+                  <h2 className="mt-1 text-2xl font-extrabold text-[#17233B]">
+                    Avaliações
+                  </h2>
+                </div>
+                <span className="text-sm font-bold text-[#667085]">
+                  {reviews.length}{" "}
+                  {reviews.length === 1 ? "avaliação" : "avaliações"}
+                </span>
+              </div>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {reviews.map((review, i) => (
+                  <article key={i} className="surface-card p-5">
+                    <div className="flex gap-1">
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <Star
+                          key={j}
+                          size={15}
+                          fill={j < review.rating ? "#FFB15A" : "none"}
+                          stroke={j < review.rating ? "#FFB15A" : "#C6D5D2"}
+                        />
+                      ))}
+                    </div>
+                    {review.comment && (
+                      <p className="mt-3 text-sm leading-6 text-[#667085]">
+                        “{review.comment}”
+                      </p>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <section className="surface-card p-6">
+            <div className="flex items-center gap-4">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F97316] text-xl font-extrabold text-white">
+                {service.user.name?.[0]?.toUpperCase() || "?"}
+              </span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#667085]">
+                  Profissional
+                </p>
+                <h2 className="font-extrabold text-[#17233B]">
+                  {service.user.name}
+                </h2>
+                {avg > 0 && (
+                  <span className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-[#984B00]">
+                    <Star size={14} fill="#FFB15A" stroke="#FFB15A" />{" "}
+                    {avg.toFixed(1)} ({reviews.length})
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="mt-5 flex items-center gap-2 rounded-xl bg-[#FFF1E8] p-3 text-sm font-bold text-[#F97316]">
+              <ShieldCheck size={18} /> Contrate e converse pela Serveo
+            </div>
+          </section>
+          <section className="surface-card p-6">
+            {service.priceFrom && (
+              <div className="mb-5 border-b border-[#EEEAE4] pb-5">
+                <p className="text-sm font-semibold text-[#667085]">
+                  Valores a partir de
+                </p>
+                <p className="mt-1 text-3xl font-extrabold text-[#17233B]">
+                  R$ {Number(service.priceFrom).toFixed(2)}
+                </p>
+                <small className="text-[#667085]">
+                  Valor final combinado por proposta
+                </small>
+              </div>
+            )}
+            {success ? (
+              <div className="text-center">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-700">
+                  <Check size={23} />
+                </span>
+                <h3 className="mt-4 text-lg font-extrabold text-[#17233B]">
+                  Pedido enviado
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-[#667085]">
+                  Agora converse com o profissional e combine os detalhes.
+                </p>
+                <Link
+                  href="/dashboard/messages"
+                  className="btn-primary mt-5 w-full"
+                >
+                  <MessageCircle size={17} /> Abrir mensagens
+                </Link>
+              </div>
+            ) : (
+              <>
+                <label className="block text-sm font-extrabold text-[#17233B]">
+                  Quando você precisa?
+                </label>
+                <button
+                  type="button"
+                  onClick={() => dateRef.current?.showPicker()}
+                  className="field relative mt-2 flex items-center gap-3 text-left"
+                >
+                  <CalendarDays size={18} className="text-[#F97316]" />
+                  <span className={startDate ? "" : "text-[#7B918D]"}>
+                    {formatted}
+                  </span>
+                  <span className="ml-auto text-xs font-extrabold text-[#F97316]">
+                    Selecionar
+                  </span>
+                  <input
+                    ref={dateRef}
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
+                    className="pointer-events-none absolute h-px w-px opacity-0"
+                    tabIndex={-1}
+                  />
+                </button>
+                {error && (
+                  <p
+                    role="alert"
+                    className="mt-3 text-center text-sm font-semibold text-red-700"
+                  >
+                    {error}
+                  </p>
+                )}
+                <button
+                  onClick={book}
+                  disabled={booking}
+                  className="btn-primary mt-5 w-full disabled:opacity-60"
+                >
+                  {booking ? "Enviando..." : "Pedir orçamento"}
+                </button>
+              </>
+            )}
+          </section>
+        </aside>
+      </div>
+    </main>
+  );
+}
