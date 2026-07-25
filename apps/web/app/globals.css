@@ -5,4 +5,11 @@
   --color-primary-dark: #EA6C0A;
   --color-secondary: #1E3A5F;
   --color-secondary-light: #2D5A8E;
+  --color-cream: #FFF8F1;
 }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { color: #1E3A5F; background: var(--color-cream); font-family: Arial, Helvetica, sans-serif; }
+button, a, input { transition: all 160ms ease; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid rgba(249, 115, 22, .3); outline-offset: 2px; }

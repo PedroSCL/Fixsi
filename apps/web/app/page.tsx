@@ -1,37 +1,6 @@
 import Link from "next/link";
+import { ArrowRight, BadgeCheck, Clock3, Search, ShieldCheck, Wrench } from "lucide-react";
 
-export default function Home() {
-  return (
-    <div>
-      {/* Hero */}
-      <section className="max-w-7xl mx-auto px-6 py-16 flex items-center justify-between gap-12">
-        {/* Texto */}
-        <div className="max-w-lg">
-          <h1 className="text-4xl font-bold leading-tight mb-4" style={{ color: "#1E3A5F" }}>
-            Encontre{" "}
-            <span style={{ color: "#F97316" }}>profissionais</span> e contrate{" "}
-            <span style={{ color: "#F97316" }}>serviços</span> para tudo o que precisar
-          </h1>
-          <p className="text-gray-500 text-lg mb-8">
-            A Fixsi conecta você aos melhores prestadores de serviços domésticos, com segurança e rapidez.
-          </p>
-          <Link
-            href="/services"
-            className="text-white px-8 py-4 rounded-full text-lg font-medium inline-block hover:opacity-90"
-            style={{ backgroundColor: "#F97316" }}
-          >
-            Encontrar profissional agora
-          </Link>
-        </div>
+const benefits = [{ icon: ShieldCheck, title: "Mais segurança", text: "Profissionais e serviços em um lugar confiável." }, { icon: Clock3, title: "Mais agilidade", text: "Encontre o que precisa sem perder tempo." }, { icon: BadgeCheck, title: "Escolha com confiança", text: "Compare opções e fale direto com o profissional." }];
 
-        {/* Ilustração */}
-        <div className="hidden lg:flex rounded-2xl p-12 items-center justify-center" style={{ backgroundColor: "#F5F0E8" }}>
-          <span className="text-8xl">🔧🔨⚡</span>
-        </div>
-      </section>
-
-      {/* Barra laranja */}
-      <div className="h-2 w-full" style={{ backgroundColor: "#F97316" }} />
-    </div>
-  );
-}
+export default function Home() { return <main className="overflow-hidden"><section className="relative mx-auto grid max-w-7xl items-center gap-12 px-6 py-16 lg:grid-cols-[1.05fr_.95fr] lg:py-24"><div className="relative z-10 max-w-xl"><span className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-sm font-semibold text-orange-600 shadow-sm"><Wrench size={16}/> Serviços para o seu dia a dia</span><h1 className="text-4xl font-extrabold leading-[1.1] tracking-tight text-[#1E3A5F] sm:text-5xl">Encontre profissionais e contrate <span className="text-orange-500">serviços</span> para tudo o que precisar.</h1><p className="mt-6 max-w-lg text-lg leading-8 text-slate-600">A Fixsi conecta você aos melhores prestadores de serviços domésticos, com segurança e rapidez.</p><div className="mt-8 flex flex-wrap gap-3"><Link href="/services" className="inline-flex items-center gap-2 rounded-full bg-orange-500 px-7 py-4 font-bold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:bg-orange-600">Encontrar profissional <ArrowRight size={18}/></Link><Link href="/register" className="rounded-full border border-slate-200 bg-white px-7 py-4 font-bold text-[#1E3A5F] hover:border-orange-200 hover:text-orange-600">Quero oferecer serviços</Link></div><div className="mt-10 flex items-center gap-3 text-sm font-medium text-slate-600"><div className="flex -space-x-2"><span className="h-8 w-8 rounded-full border-2 border-white bg-orange-200"/><span className="h-8 w-8 rounded-full border-2 border-white bg-blue-200"/><span className="h-8 w-8 rounded-full border-2 border-white bg-amber-100"/></div> Conectando pessoas a bons profissionais</div></div><div className="relative mx-auto w-full max-w-lg"><div className="absolute -inset-8 rounded-full bg-orange-200/40 blur-3xl"/><div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-orange-500 p-7 shadow-2xl shadow-orange-300/40 sm:p-10"><img src="/img/tools-illustration.png" alt="Ferramentas para serviços" className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-multiply"/><div className="relative mb-10 flex items-center justify-between"><img src="/img/logofixsi.png" alt="Fixsi" className="h-16 w-auto rounded-xl bg-white px-4 py-2 object-contain shadow-sm"/><span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white">Fixsi</span></div><p className="relative text-xs font-bold uppercase tracking-[.22em] text-white/85">Comece por aqui</p><h2 className="relative mt-3 text-3xl font-extrabold leading-tight tracking-tight text-white">Qual serviço você está procurando?</h2><Link href="/services" className="relative mt-7 flex items-center justify-between rounded-2xl bg-white p-4 font-semibold text-slate-600 shadow-lg hover:shadow-xl"><span className="flex items-center gap-3"><Search size={20} className="text-orange-600"/> Buscar profissional</span><ArrowRight size={18} className="text-[#1E3A5F]"/></Link><div className="relative mt-7 grid grid-cols-3 gap-3 text-center text-xs font-bold text-white"><span className="rounded-xl bg-white/20 p-3">Elétrica</span><span className="rounded-xl bg-white/20 p-3">Limpeza</span><span className="rounded-xl bg-white/20 p-3">Reformas</span></div></div></div></section><section id="como-funciona" className="border-y border-orange-100 bg-white/80 py-16"><div className="mx-auto max-w-7xl px-6"><div className="max-w-xl"><p className="font-bold text-orange-500">POR QUE USAR A FIXSI</p><h2 className="mt-2 text-3xl font-extrabold tracking-tight text-[#1E3A5F]">Uma maneira simples de resolver o que você precisa.</h2></div><div className="mt-10 grid gap-5 md:grid-cols-3">{benefits.map(({icon: Icon,title,text}) => <article key={title} className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"><div className="mb-5 inline-flex rounded-xl bg-orange-50 p-3 text-orange-500"><Icon size={24}/></div><h3 className="text-lg font-bold text-[#1E3A5F]">{title}</h3><p className="mt-2 leading-6 text-slate-600">{text}</p></article>)}</div></div></section></main>; }

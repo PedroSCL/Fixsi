@@ -1,80 +1,13 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, User } from "lucide-react";
+import { Menu, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function Navbar() {
-  const [user, setUser] = useState<{ name: string } | null>(null);
-  const [search, setSearch] = useState("");
-  const router = useRouter();
-
-  useEffect(() => {
-    const stored = localStorage.getItem("fixsi_user");
-    if (stored) setUser(JSON.parse(stored));
-  }, []);
-
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (search.trim()) {
-      router.push(`/services?search=${encodeURIComponent(search)}`);
-    }
-  }
-
-  return (
-    <nav className="bg-white border-b border-gray-100 px-6 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <span className="text-2xl font-bold" style={{ color: "#1E3A5F" }}>
-            🏠 Fixsi
-          </span>
-        </Link>
-
-        {/* Links */}
-        <div className="hidden md:flex items-center gap-8">
-          <Link href="/#como-funciona" className="font-medium hover:opacity-80" style={{ color: "#1E3A5F" }}>
-            Como funciona
-          </Link>
-          <Link href="/services" className="font-medium hover:opacity-80" style={{ color: "#1E3A5F" }}>
-            Serviços
-          </Link>
-        </div>
-
-        {/* Busca */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-xs hidden md:flex">
-          <div className="relative w-full">
-            <input
-              type="text"
-              placeholder="Pesquisar"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-4 pr-10 py-2 rounded-full bg-gray-100 text-sm focus:outline-none"
-            />
-            <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-              <Search size={16} />
-            </button>
-          </div>
-        </form>
-
-        {/* Usuário */}
-        <div className="flex items-center gap-3">
-          {user ? (
-            <Link href="/dashboard">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: "#F97316" }}>
-                {user?.name[0].toUpperCase()}
-              </div>
-            </Link>
-          ) : (
-            <Link href="/login">
-              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200">
-                <User size={20} />
-              </div>
-            </Link>
-          )}
-        </div>
-      </div>
-    </nav>
-  );
+  const [user, setUser] = useState<{ name: string } | null>(null); const [search, setSearch] = useState(""); const [menuOpen, setMenuOpen] = useState(false); const router = useRouter();
+  useEffect(() => { const stored = localStorage.getItem("fixsi_user"); if (stored) setUser(JSON.parse(stored)); }, []);
+  function handleSearch(e: React.FormEvent) { e.preventDefault(); if (search.trim()) { router.push(`/services?search=${encodeURIComponent(search)}`); setMenuOpen(false); } }
+  const links = <><Link href="/#como-funciona" onClick={() => setMenuOpen(false)} className="font-semibold text-slate-600 hover:text-orange-500">Como funciona</Link><Link href="/services" onClick={() => setMenuOpen(false)} className="font-semibold text-slate-600 hover:text-orange-500">Explorar serviços</Link></>;
+  return <nav className="sticky top-0 z-30 border-b border-orange-100 bg-white/95 px-5 py-2 backdrop-blur-md"><div className="mx-auto flex max-w-7xl items-center gap-4"><Link href="/" className="flex h-14 w-36 shrink-0 items-center overflow-visible"><img src="/img/logofixsi.png" alt="Fixsi" className="h-20 w-auto max-w-none object-contain"/></Link><div className="ml-5 hidden items-center gap-7 lg:flex">{links}</div><form onSubmit={handleSearch} className="relative ml-auto hidden w-full max-w-sm md:block"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/><input type="search" placeholder="Qual serviço você procura?" value={search} onChange={e => setSearch(e.target.value)} className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-11 pr-4 text-sm text-slate-700 outline-none focus:border-orange-300 focus:bg-white"/></form>{user ? <Link href="/dashboard" className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500 font-bold text-white shadow-sm md:ml-0">{user.name?.[0]?.toUpperCase() || "U"}</Link> : <Link href="/login" className="ml-auto hidden rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-orange-200 hover:bg-orange-600 md:block">Entrar</Link>}<button aria-label="Abrir menu" onClick={() => setMenuOpen(!menuOpen)} className="ml-auto rounded-xl p-2 text-[#1E3A5F] hover:bg-orange-50 md:ml-0 lg:hidden">{menuOpen ? <X/> : <Menu/>}</button></div>{menuOpen && <div className="mx-auto mt-3 flex max-w-7xl flex-col gap-4 border-t border-orange-100 pt-4 pb-2 lg:hidden"><form onSubmit={handleSearch} className="relative md:hidden"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/><input type="search" placeholder="Buscar serviços" value={search} onChange={e => setSearch(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-orange-300"/></form><div className="flex flex-col gap-4">{links}{!user && <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-xl bg-orange-500 px-4 py-3 text-center font-semibold text-white">Entrar na minha conta</Link>}</div></div>}</nav>;
 }

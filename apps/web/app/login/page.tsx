@@ -1,111 +1,15 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, LockKeyhole, Mail } from "lucide-react";
 import { api } from "../lib/api";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      const res = await api.post("/auth/login", { email, password });
-      localStorage.setItem("fixsi_token", res.data.token);
-      localStorage.setItem("fixsi_user", JSON.stringify(res.data.user));
-      router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Erro ao fazer login");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      {/* Botão Voltar */}
-      <Link
-        href="/"
-        className="fixed top-6 right-6 text-white px-6 py-2 rounded-lg font-medium"
-        style={{ backgroundColor: "#F97316" }}
-      >
-        Voltar
-      </Link>
-
-      {/* Card */}
-      <div className="w-full max-w-md bg-gray-100 rounded-3xl p-10 flex flex-col items-center gap-6">
-        {/* Logo */}
-        <div className="flex items-center gap-2">
-          <span className="text-3xl">🏠</span>
-          <span className="text-2xl font-bold" style={{ color: "#1E3A5F" }}>
-            Fixsi
-          </span>
-        </div>
-
-        {/* Ícone usuário */}
-        <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
-          <span className="text-3xl">👤</span>
-        </div>
-
-        {/* Formulário */}
-        <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="E-mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-5 py-3 rounded-full bg-gray-200 text-gray-700 focus:outline-none focus:ring-2"
-            style={{ "--tw-ring-color": "#F97316" } as any}
-          />
-          <div>
-            <input
-              type="password"
-              placeholder="Senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-5 py-3 rounded-full bg-gray-200 text-gray-700 focus:outline-none"
-            />
-            <div className="text-right mt-1">
-              <Link href="/forgot-password" className="text-sm" style={{ color: "#F97316" }}>
-                Esqueci minha senha!
-              </Link>
-            </div>
-          </div>
-
-          {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-full text-white font-medium hover:opacity-90 disabled:opacity-60"
-            style={{ backgroundColor: "#F97316" }}
-          >
-            {loading ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
-
-        <p className="text-gray-500 text-sm">
-          Não possui senha?{" "}
-          <Link href="/register" style={{ color: "#F97316" }} className="font-medium">
-            Cadastre-se
-          </Link>
-        </p>
-      </div>
-
-      {/* Barra laranja */}
-      <div className="fixed bottom-0 left-0 right-0 h-2" style={{ backgroundColor: "#F97316" }} />
-    </div>
-  );
+  const router = useRouter(); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  async function handleLogin(e: React.FormEvent) { e.preventDefault(); setError(""); setLoading(true); try { const res = await api.post("/auth/login", { email, password }); localStorage.setItem("fixsi_token", res.data.token); localStorage.setItem("fixsi_user", JSON.stringify(res.data.user)); router.push("/dashboard"); } catch (err: any) { setError(err.response?.data?.error || "Erro ao fazer login"); } finally { setLoading(false); } }
+  return <main className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-orange-50 via-[#FFF8F1] to-blue-50 px-5 py-10 sm:py-16"><div className="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-slate-300/30 md:grid-cols-[.85fr_1.15fr]">
+    <aside className="hidden bg-orange-500 p-10 text-white md:flex md:flex-col"><img src="/img/logofixsi.png" alt="Fixsi" className="h-11 w-auto self-start rounded-lg bg-white px-2 py-1 object-contain"/><div className="my-auto"><p className="text-xs font-bold tracking-[.22em] text-white/80">BEM-VINDO DE VOLTA</p><h1 className="mt-5 max-w-sm text-4xl font-extrabold leading-[1.16] tracking-tight text-white">Seu próximo serviço começa aqui.</h1><p className="mt-6 max-w-sm text-base font-medium leading-7 text-white/95">Acesse sua conta para acompanhar seus serviços, mensagens e agendamentos.</p></div><p className="text-sm font-medium text-white/80">Prático, confiável e do seu jeito.</p></aside>
+    <section className="p-7 sm:p-10"><Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-orange-600"><ArrowLeft size={16}/> Voltar para início</Link><div className="mx-auto mt-9 max-w-sm"><h2 className="text-3xl font-extrabold tracking-tight text-[#1E3A5F]">Entrar</h2><p className="mt-2 font-medium text-slate-600">Que bom ter você por aqui.</p><form onSubmit={handleLogin} className="mt-8 space-y-5"><label className="block text-sm font-bold text-[#1E3A5F]">E-mail<div className="relative mt-2"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18}/><input type="email" placeholder="voce@email.com" value={email} onChange={e => setEmail(e.target.value)} required className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-4 font-medium text-slate-700 outline-none focus:border-orange-400 focus:bg-white"/></div></label><label className="block text-sm font-bold text-[#1E3A5F]">Senha<div className="relative mt-2"><LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18}/><input type="password" placeholder="Sua senha" value={password} onChange={e => setPassword(e.target.value)} required className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-4 font-medium text-slate-700 outline-none focus:border-orange-400 focus:bg-white"/></div></label><div className="text-right"><Link href="/forgot-password" className="text-sm font-semibold text-orange-600 hover:text-orange-700">Esqueci minha senha</Link></div>{error && <p className="rounded-xl bg-red-50 p-3 text-center text-sm text-red-600">{error}</p>}<button type="submit" disabled={loading} className="w-full rounded-xl bg-orange-500 py-3.5 font-bold text-white shadow-lg shadow-orange-200 hover:bg-orange-600 disabled:opacity-60">{loading ? "Entrando..." : "Entrar na minha conta"}</button></form><p className="mt-7 text-center text-sm font-medium text-slate-600">Ainda não tem uma conta? <Link href="/register" className="font-bold text-orange-600">Cadastre-se</Link></p></div></section>
+  </div></main>;
 }
