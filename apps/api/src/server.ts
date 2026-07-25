@@ -17,6 +17,13 @@ import { paymentsRoutes } from "./routes/payments";
 const app = Fastify({ logger: true });
 
 async function main() {
+  const isProduction = process.env.NODE_ENV === "production";
+  const jwtSecret = process.env.JWT_SECRET;
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
+  if (isProduction && (!jwtSecret || jwtSecret.length < 32)) {
+    throw new Error("JWT_SECRET deve ter pelo menos 32 caracteres em produção");
+  }
   
   await app.register(helmet);
 
@@ -26,11 +33,12 @@ async function main() {
   });
 
   await app.register(cors, {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: frontendUrl,
   });
 
   await app.register(jwt, {
-    secret: process.env.JWT_SECRET || "dev-secret-trocar-depois",
+    secret: jwtSecret || "development-only-secret-not-for-production",
+    sign: { expiresIn: "15m" },
   });
 
   await app.register(authRoutes,          { prefix: "/auth" });
@@ -53,7 +61,7 @@ async function main() {
   // Configura o Socket.io usando o servidor HTTP do Fastify
   setupSocket(
     app.server,
-    process.env.JWT_SECRET || "dev-secret-trocar-depois"
+    app.jwt
   );
 
   console.log("🚀 API rodando em http://localhost:3001");

@@ -4,21 +4,21 @@ import { prisma } from "../lib/prisma";
 import { authenticate } from "../plugins/authenticate";
 
 const createToolSchema = z.object({
-  title: z.string().min(3),
-  description: z.string().min(10),
-  category: z.string().min(2),
-  pricePerDay: z.number().positive(),
-  usageRules: z.string().optional(),
-  images: z.array(z.string()).default([]),
+  title: z.string().trim().min(3).max(120),
+  description: z.string().trim().min(10).max(3000),
+  category: z.string().trim().min(2).max(60),
+  pricePerDay: z.number().positive().finite(),
+  usageRules: z.string().trim().max(2000).optional(),
+  images: z.array(z.string().url()).max(8).default([]),
 });
 
 const updateToolSchema = createToolSchema.partial();
 
 const listToolSchema = z.object({
   category: z.string().optional(),
-  search: z.string().optional(),
-  page: z.coerce.number().default(1),
-  limit: z.coerce.number().default(10),
+  search: z.string().trim().max(120).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
 });
 
 const reportSchema = z.object({

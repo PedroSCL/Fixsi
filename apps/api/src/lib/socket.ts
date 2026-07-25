@@ -2,7 +2,7 @@ import { Server as SocketServer } from "socket.io";
 import { Server as HttpServer } from "http";
 import { prisma } from "./prisma";
 
-export function setupSocket(httpServer: HttpServer, jwtSecret: string) {
+export function setupSocket(httpServer: HttpServer, jwt: { verify: (token: string) => unknown }) {
   const io = new SocketServer(httpServer, {
     cors: {
       origin: process.env.FRONTEND_URL || "http://localhost:3000",
@@ -20,9 +20,7 @@ export function setupSocket(httpServer: HttpServer, jwtSecret: string) {
     }
 
     try {
-      // Verifica o token manualmente (sem o Fastify aqui)
-      const jwt = require("jsonwebtoken");
-      const decoded = jwt.verify(token, jwtSecret) as { id: string };
+      const decoded = jwt.verify(token) as { id: string };
       socket.data.userId = decoded.id;
       next();
     } catch {

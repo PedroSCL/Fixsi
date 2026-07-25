@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -10,7 +11,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { color: #1E3A5F; background: var(--color-cream); font-family: Arial, Helvetica, sans-serif; }
+body { color: #1E3A5F; background: var(--color-cream); font-family: "Manrope", Arial, sans-serif; }
 button, a, input { transition: all 160ms ease; }
 button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid rgba(249, 115, 22, .3); outline-offset: 2px; }
 
@@ -32,4 +33,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 input[type="date"]::-webkit-datetime-edit {
   color: #1E3A5F;
+}
+
+/* Mantém o card principal da home limpo e com foco na chamada de ação. */
+img[src="/img/tools-illustration.png"] {
+  display: none;
+}
+
+/* Substitui o arquivo original (com muita margem transparente) pela versão recortada. */
+/* Usa a mesma presença visual da marca nos painéis laterais de autenticação. */
+aside > img[src="/img/logofixsi.png"] {
+  content: url("/img/logofixsi-horizontal-tight.png");
+  height: 3.5rem;
+  width: auto;
+  padding: .35rem .65rem;
+  transform: none;
 }

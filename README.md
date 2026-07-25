@@ -1,159 +1,159 @@
-# Turborepo starter
+# Fixsi
 
-This Turborepo starter is maintained by the Turborepo core team.
+Plataforma para encontrar e contratar profissionais, publicar serviços, alugar ferramentas, negociar pelo chat e acompanhar pagamentos.
 
-## Using this example
+> Projeto em desenvolvimento. A interface está em português (pt-BR).
 
-Run the following command:
+## Funcionalidades
 
-```sh
-npx create-turbo@latest
+- Cadastro e login de clientes, profissionais e locadores.
+- Catálogo público de serviços com busca e categorias.
+- Publicação e administração de serviços e ferramentas.
+- Solicitação de orçamento e agendamentos.
+- Conversas entre cliente e prestador, com propostas.
+- Avaliações, denúncias e moderação administrativa.
+- Checkout PIX e processamento de eventos de pagamento via Asaas.
+
+## Tecnologias
+
+| Camada | Tecnologias |
+| --- | --- |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS, Axios, Lucide |
+| Backend | Fastify 5, TypeScript, Zod, JWT, Socket.IO |
+| Banco de dados | PostgreSQL, Prisma |
+| Pagamentos | Asaas (PIX) |
+| Monorepo | pnpm workspaces e Turborepo |
+
+## Estrutura
+
+```text
+apps/
+  api/          API Fastify, autenticação, pagamentos e WebSocket
+  web/          Aplicação Next.js
+packages/
+  database/     Schema e migrations do Prisma
+  ui/           Componentes compartilhados
 ```
 
-## What's inside?
+## Pré-requisitos
 
-This Turborepo includes the following packages/apps:
+- Node.js 18 ou superior
+- pnpm 9 ou superior
+- PostgreSQL 14 ou superior
+- Conta sandbox do Asaas para testar pagamentos PIX
 
-### Apps and Packages
+## Instalação
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+```bash
+git clone https://github.com/SEU_USUARIO/fixsi.git
+cd fixsi
+pnpm install
 ```
 
-Without global `turbo`, use your package manager:
+## Variáveis de ambiente
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
+Crie um arquivo `.env` na raiz do projeto ou configure as variáveis no ambiente de deploy.
+
+```env
+# Banco de dados
+DATABASE_URL="postgresql://USUARIO:SENHA@localhost:5432/fixsi?schema=public"
+
+# API
+NODE_ENV="development"
+PORT="3001"
+FRONTEND_URL="http://localhost:3000"
+
+# Use no mínimo 32 caracteres. Em produção, a API não inicia sem esse valor.
+JWT_SECRET="troque-por-um-segredo-longo-e-aleatorio-com-32-ou-mais-caracteres"
+
+# Frontend
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+
+# Asaas — utilize credenciais sandbox durante o desenvolvimento
+ASAAS_API_KEY="sua_chave_asaas"
+ASAAS_WEBHOOK_TOKEN="um_token_longo_e_aleatorio_para_o_webhook"
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Nunca versione arquivos `.env` ou chaves de API.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+## Banco de dados
 
-```sh
-turbo build --filter=docs
+Com o PostgreSQL ativo e `DATABASE_URL` configurada:
+
+```bash
+pnpm --filter @fixsi/database exec prisma migrate dev
+pnpm --filter @fixsi/database exec prisma generate
 ```
 
-Without global `turbo`:
+Para visualizar os dados localmente:
 
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+```bash
+pnpm --filter @fixsi/database exec prisma studio
 ```
 
-### Develop
+## Executando localmente
 
-To develop all apps and packages, run the following command:
+Inicie todas as aplicações do monorepo:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
+```bash
+pnpm dev
 ```
 
-Without global `turbo`, use your package manager:
+Ou inicie cada aplicação em terminais separados:
 
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
+```bash
+pnpm --filter api dev
+pnpm --filter web dev
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+| Serviço | Endereço |
+| --- | --- |
+| Web | http://localhost:3000 |
+| API | http://localhost:3001 |
+| Saúde da API | http://localhost:3001/health |
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+## Scripts úteis
 
-```sh
-turbo dev --filter=web
+```bash
+# Build de todo o monorepo
+pnpm build
+
+# Verificação de tipos do frontend
+pnpm --filter web check-types
+
+# Build da API
+pnpm --filter api build
+
+# Lint do frontend
+pnpm --filter web lint
 ```
 
-Without global `turbo`:
+## Segurança
 
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+- Senhas são armazenadas com hash bcrypt.
+- Rotas protegidas usam JWT e validação de autorização por usuário/papel.
+- O JWT expira em 15 minutos.
+- Em produção, `JWT_SECRET` é obrigatório e deve ter no mínimo 32 caracteres.
+- A API aplica Helmet, CORS restrito ao `FRONTEND_URL` e limite global de requisições.
+- Entradas de serviços e ferramentas são validadas e possuem limites de tamanho e paginação.
 
-### Remote Caching
+Para produção, a melhoria recomendada é migrar a sessão para cookies `HttpOnly`, `Secure` e `SameSite`, com renovação de token. Isso reduz a exposição a ataques de XSS em comparação ao armazenamento de tokens no navegador.
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+## Pagamentos
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+O projeto está configurado para o ambiente sandbox do Asaas. Antes de produção:
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+1. Configure credenciais de produção no provedor.
+2. Cadastre o endpoint `POST /payments/webhook` no Asaas.
+3. Use um `ASAAS_WEBHOOK_TOKEN` longo, aleatório e secreto.
+4. Nunca exponha chaves do Asaas em variáveis `NEXT_PUBLIC_*`.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+## Contribuição
 
-```sh
-cd my-turborepo
-turbo login
-```
+1. Crie uma branch: `git checkout -b feature/minha-alteracao`.
+2. Faça as alterações e valide os tipos.
+3. Abra um Pull Request descrevendo contexto, mudanças e como testar.
 
-Without global `turbo`, use your package manager:
+## Licença
 
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+Defina a licença do projeto antes de disponibilizá-lo publicamente.
