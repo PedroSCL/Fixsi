@@ -212,7 +212,7 @@ export default function MessagesPage() {
                         className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0"
                         style={{ backgroundColor: "#F97316" }}
                       >
-                        {(getTitle(booking)[0] ?? "?").toUpperCase()}
+                        {(getTitle(booking)?.[0] ?? "?").toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p
