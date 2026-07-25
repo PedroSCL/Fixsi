@@ -1,161 +1,16 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, CircleDollarSign, FileText, Tag } from "lucide-react";
 import { api } from "../../../lib/api";
 
-const CATEGORIES = [
-  "Elétrica", "Hidráulica", "Marcenaria", "Pintura",
-  "Limpeza", "Jardinagem", "Informática", "Reformas", "Outros"
-];
+const CATEGORIES = ["Elétrica", "Hidráulica", "Marcenaria", "Pintura", "Limpeza", "Jardinagem", "Informática", "Reformas", "Outros"];
 
 export default function NewServicePage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    category: "",
-    priceFrom: "",
-  });
-
-  function update(field: string, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      await api.post("/services", {
-        title: form.title,
-        description: form.description,
-        category: form.category,
-        priceFrom: form.priceFrom ? Number(form.priceFrom) : undefined,
-      });
-
-      router.push("/dashboard?success=service");
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Erro ao cadastrar serviço");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto px-6 py-8">
-      {/* Voltar */}
-      <Link
-        href="/dashboard"
-        className="flex items-center gap-2 text-gray-400 hover:text-gray-600 mb-6"
-      >
-        <ArrowLeft size={18} />
-        Voltar para o dashboard
-      </Link>
-
-      <div className="bg-white rounded-3xl p-8 shadow-sm">
-        <h1 className="text-2xl font-bold mb-2 text-center" style={{ color: "#F97316" }}>
-          Cadastrar Novo Serviço
-        </h1>
-        <p className="text-gray-400 text-sm text-center mb-8">
-          Preencha os detalhes do seu serviço para aparecer nas buscas
-        </p>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          {/* Título */}
-          <div>
-            <label className="text-sm font-medium text-gray-600 mb-1 block">
-              Título
-            </label>
-            <input
-              type="text"
-              placeholder="Ex: Eletricista Residencial"
-              value={form.title}
-              onChange={(e) => update("title", e.target.value)}
-              required
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-orange-400 text-gray-700"
-            />
-          </div>
-
-          {/* Descrição */}
-          <div>
-            <label className="text-sm font-medium text-gray-600 mb-1 block">
-              Descrição
-            </label>
-            <textarea
-              placeholder="Descreva o que você oferece, sua experiência e diferenciais..."
-              value={form.description}
-              onChange={(e) => update("description", e.target.value)}
-              required
-              rows={4}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-orange-400 text-gray-700 resize-none"
-            />
-          </div>
-
-          {/* Categoria */}
-          <div>
-            <label className="text-sm font-medium text-gray-600 mb-1 block">
-              Categoria
-            </label>
-            <select
-              value={form.category}
-              onChange={(e) => update("category", e.target.value)}
-              required
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-orange-400 text-gray-700 bg-white"
-            >
-              <option value="">Selecione uma categoria</option>
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Preço de referência */}
-          <div>
-            <label className="text-sm font-medium text-gray-600 mb-1 block">
-              Preço de referência (opcional)
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
-                R$
-              </span>
-              <input
-                type="number"
-                placeholder="0,00"
-                value={form.priceFrom}
-                onChange={(e) => update("priceFrom", e.target.value)}
-                min="0"
-                step="0.01"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-orange-400 text-gray-700"
-              />
-            </div>
-            <p className="text-xs text-gray-400 mt-1">
-              O valor final será negociado com o cliente pelo chat
-            </p>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-              <p className="text-red-500 text-sm text-center">{error}</p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 rounded-full text-white font-medium text-lg hover:opacity-90 disabled:opacity-60 mt-2"
-            style={{ backgroundColor: "#F97316" }}
-          >
-            {loading ? "Cadastrando..." : "Concluir"}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
+  const router = useRouter(); const [loading, setLoading] = useState(false); const [error, setError] = useState(""); const [form, setForm] = useState({ title: "", description: "", category: "", priceFrom: "" });
+  const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
+  async function handleSubmit(e: React.FormEvent) { e.preventDefault(); setError(""); setLoading(true); try { await api.post("/services", { title: form.title, description: form.description, category: form.category, priceFrom: form.priceFrom ? Number(form.priceFrom) : undefined }); router.push("/dashboard?success=service"); } catch (err: any) { setError(err.response?.data?.error || "Erro ao cadastrar serviço"); } finally { setLoading(false); } }
+  const input = "mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-700 outline-none focus:border-orange-400 focus:bg-white";
+  return <main className="mx-auto max-w-3xl px-6 py-10"><Link href="/dashboard" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-orange-600"><ArrowLeft size={17}/> Voltar ao dashboard</Link><section className="mt-6 overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-sm"><header className="border-b border-orange-100 bg-orange-50/70 px-7 py-7 sm:px-10"><div className="flex items-start gap-4"><span className="rounded-xl bg-orange-500 p-3 text-white"><BriefcaseBusiness size={24}/></span><div><p className="text-xs font-bold tracking-[.16em] text-orange-600">ÁREA DO PROFISSIONAL</p><h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#1E3A5F]">Cadastrar novo serviço</h1><p className="mt-1 text-sm font-medium text-slate-600">Mostre seu trabalho para novos clientes na Fixsi.</p></div></div></header><form onSubmit={handleSubmit} className="space-y-6 p-7 sm:p-10"><label className="block text-sm font-bold text-[#1E3A5F]"><span className="flex items-center gap-2"><BriefcaseBusiness size={16} className="text-orange-500"/> Título do serviço</span><input type="text" placeholder="Ex.: Eletricista residencial" value={form.title} onChange={e => update("title", e.target.value)} required className={input}/></label><label className="block text-sm font-bold text-[#1E3A5F]"><span className="flex items-center gap-2"><FileText size={16} className="text-orange-500"/> Descrição</span><textarea placeholder="Descreva o que você oferece, sua experiência e diferenciais..." value={form.description} onChange={e => update("description", e.target.value)} required rows={5} className={`${input} resize-none`}/></label><div className="grid gap-6 sm:grid-cols-2"><label className="block text-sm font-bold text-[#1E3A5F]"><span className="flex items-center gap-2"><Tag size={16} className="text-orange-500"/> Categoria</span><select value={form.category} onChange={e => update("category", e.target.value)} required className={input}><option value="">Selecione uma categoria</option>{CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select></label><label className="block text-sm font-bold text-[#1E3A5F]"><span className="flex items-center gap-2"><CircleDollarSign size={16} className="text-orange-500"/> Preço inicial</span><div className="relative"><span className="absolute left-4 top-[59%] -translate-y-1/2 font-semibold text-slate-500">R$</span><input type="number" placeholder="0,00" value={form.priceFrom} onChange={e => update("priceFrom", e.target.value)} min="0" step="0.01" className={`${input} pl-10`}/></div></label></div><p className="-mt-3 text-xs font-medium text-slate-500">O valor final poderá ser negociado com o cliente pelo chat.</p>{error && <p className="rounded-xl bg-red-50 p-3 text-center text-sm font-medium text-red-600">{error}</p>}<div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end"><Link href="/dashboard" className="rounded-xl border border-slate-200 px-5 py-3 text-center text-sm font-bold text-slate-600 hover:bg-slate-50">Cancelar</Link><button type="submit" disabled={loading} className="rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white shadow-md shadow-orange-200 hover:bg-orange-600 disabled:opacity-60">{loading ? "Publicando..." : "Publicar serviço"}</button></div></form></section></main>;
 }
