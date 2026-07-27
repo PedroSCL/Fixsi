@@ -1,9 +1,11 @@
 import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import cookie from "@fastify/cookie";
 import jwt from "@fastify/jwt";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
+import { ZodError } from "zod";
 import { authRoutes } from "./routes/auth";
 import { servicesRoutes } from "./routes/services";
 import { toolsRoutes } from "./routes/tools";
@@ -13,17 +15,13 @@ import { conversationsRoutes } from "./routes/conversations";
 import { setupSocket } from "./lib/socket";
 import { reviewsRoutes } from "./routes/reviews";
 import { paymentsRoutes } from "./routes/payments";
+import { getEnvironment } from "./config/env";
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "./lib/session";
 
 const app = Fastify({ logger: true });
 
 async function main() {
-  const isProduction = process.env.NODE_ENV === "production";
-  const jwtSecret = process.env.JWT_SECRET;
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-
-  if (isProduction && (!jwtSecret || jwtSecret.length < 32)) {
-    throw new Error("JWT_SECRET deve ter pelo menos 32 caracteres em produção");
-  }
+  const environment = getEnvironment();
 
   await app.register(helmet);
 
@@ -33,12 +31,65 @@ async function main() {
   });
 
   await app.register(cors, {
-    origin: frontendUrl,
+    origin: environment.FRONTEND_URL,
+    credentials: true,
   });
 
+  await app.register(cookie);
+
   await app.register(jwt, {
-    secret: jwtSecret || "development-only-secret-not-for-production",
+    secret:
+      environment.JWT_SECRET || "development-only-secret-not-for-production",
     sign: { expiresIn: "15m" },
+    cookie: {
+      cookieName: ACCESS_COOKIE,
+      signed: false,
+    },
+  });
+
+  app.setErrorHandler((error, request, reply) => {
+    if (error instanceof ZodError) {
+      return reply.code(400).send({
+        error: "Dados inválidos",
+        fields: error.flatten().fieldErrors,
+      });
+    }
+
+    const statusCode =
+      typeof error === "object" &&
+      error !== null &&
+      "statusCode" in error &&
+      typeof error.statusCode === "number"
+        ? error.statusCode
+        : null;
+
+    if (statusCode && statusCode >= 400 && statusCode < 500) {
+      const message =
+        error instanceof Error ? error.message : "Requisição inválida";
+      return reply.code(statusCode).send({ error: message });
+    }
+
+    request.log.error(error);
+    return reply.code(500).send({ error: "Erro interno do servidor" });
+  });
+
+  const allowedOrigin = new URL(environment.FRONTEND_URL).origin;
+  const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+  app.addHook("onRequest", async (request, reply) => {
+    const usesSessionCookie = Boolean(
+      request.cookies[ACCESS_COOKIE] || request.cookies[REFRESH_COOKIE],
+    );
+    const isPaymentWebhook = request.url.startsWith("/payments/webhook");
+
+    if (
+      usesSessionCookie &&
+      unsafeMethods.has(request.method) &&
+      !isPaymentWebhook &&
+      request.headers.origin !== allowedOrigin
+    ) {
+      return reply.code(403).send({ error: "Origem da requisição inválida" });
+    }
   });
 
   await app.register(authRoutes, { prefix: "/auth" });
@@ -54,15 +105,15 @@ async function main() {
 
   // Precisa fazer o listen antes de pegar o httpServer
   await app.listen({
-    port: Number(process.env.PORT) || 3001,
+    port: environment.PORT,
     host: "0.0.0.0",
   });
 
   // Configura o Socket.io usando o servidor HTTP do Fastify
   setupSocket(app.server, app.jwt);
 
-  console.log("🚀 API rodando em http://localhost:3001");
-  console.log("🔌 WebSocket pronto em ws://localhost:3001");
+  console.log(`🚀 API rodando na porta ${environment.PORT}`);
+  console.log(`🔌 WebSocket pronto na porta ${environment.PORT}`);
 }
 
 main();

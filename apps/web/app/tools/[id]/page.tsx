@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Check, MessageCircle, ShieldCheck } from "lucide-react";
-import { api, apiErrorMessage } from "../../lib/api";
+import { api, apiErrorMessage, isUnauthorized } from "../../lib/api";
 interface ToolDetail {
   id: string;
   title: string;
@@ -41,10 +41,6 @@ export default function ToolDetailPage() {
     })();
   }, [id]);
   async function request() {
-    if (!localStorage.getItem("fixsi_token")) {
-      router.push("/login");
-      return;
-    }
     if (!startDate || !endDate) {
       setError("Selecione retirada e devolução");
       return;
@@ -59,6 +55,10 @@ export default function ToolDetailPage() {
       await api.post("/bookings", { toolId: id, startDate, endDate });
       setSuccess(true);
     } catch (err: unknown) {
+      if (isUnauthorized(err)) {
+        router.push("/login");
+        return;
+      }
       setError(apiErrorMessage(err, "Não foi possível solicitar o aluguel"));
     } finally {
       setSending(false);

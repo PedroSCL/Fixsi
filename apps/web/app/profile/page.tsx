@@ -13,7 +13,7 @@ import {
   Phone,
   ShieldCheck,
 } from "lucide-react";
-import { api } from "../lib/api";
+import { api, clearLegacyAuthStorage, notifyAuthChanged } from "../lib/api";
 
 interface Profile {
   id: string;
@@ -43,9 +43,8 @@ export default function ProfilePage() {
       .then(({ data }) => setProfile(data.user))
       .catch((caught: unknown) => {
         if (axios.isAxiosError(caught) && caught.response?.status === 401) {
-          localStorage.removeItem("fixsi_token");
-          localStorage.removeItem("fixsi_user");
-          window.dispatchEvent(new Event("serveo:auth-changed"));
+          clearLegacyAuthStorage();
+          notifyAuthChanged();
           router.replace("/login");
           return;
         }

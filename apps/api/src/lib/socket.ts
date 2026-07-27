@@ -1,29 +1,54 @@
 import { Server as SocketServer } from "socket.io";
 import { Server as HttpServer } from "http";
+import fastifyCookie from "@fastify/cookie";
 import { prisma } from "./prisma";
+import { getEnvironment } from "../config/env";
+import { ACCESS_COOKIE } from "./session";
 
 export function setupSocket(
   httpServer: HttpServer,
   jwt: { verify: (token: string) => unknown },
 ) {
+  const environment = getEnvironment();
   const io = new SocketServer(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL || "http://localhost:3000",
+      origin: environment.FRONTEND_URL,
       methods: ["GET", "POST"],
+      credentials: true,
     },
   });
 
-  // Middleware de autenticação — verifica o JWT no handshake
-  // Antes de conectar, o frontend envia o token
-  // Se for inválido, a conexão é recusada
-  io.use((socket, next) => {
-    const token = socket.handshake.auth.token;
+  // O navegador envia o cookie HttpOnly durante o handshake. O token explícito
+  // permanece aceito temporariamente para clientes antigos durante o rollout.
+  io.use(async (socket, next) => {
+    const cookies = fastifyCookie.parse(socket.handshake.headers.cookie || "");
+    const token = socket.handshake.auth.token || cookies[ACCESS_COOKIE];
     if (!token) {
       return next(new Error("Token não fornecido"));
     }
 
     try {
-      const decoded = jwt.verify(token) as { id: string };
+      const decoded = jwt.verify(token) as {
+        id: string;
+        sessionId?: string;
+      };
+
+      if (decoded.sessionId) {
+        const activeSession = await prisma.session.findFirst({
+          where: {
+            id: decoded.sessionId,
+            userId: decoded.id,
+            revokedAt: null,
+            expiresAt: { gt: new Date() },
+          },
+          select: { id: true },
+        });
+
+        if (!activeSession) {
+          return next(new Error("Sessão inválida ou revogada"));
+        }
+      }
+
       socket.data.userId = decoded.id;
       next();
     } catch {

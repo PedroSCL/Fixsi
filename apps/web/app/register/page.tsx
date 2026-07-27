@@ -9,7 +9,12 @@ import {
   Drill,
   UserRound,
 } from "lucide-react";
-import { api, apiErrorMessage } from "../lib/api";
+import {
+  api,
+  apiErrorMessage,
+  clearLegacyAuthStorage,
+  notifyAuthChanged,
+} from "../lib/api";
 
 const roles = [
   {
@@ -51,10 +56,9 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await api.post("/auth/register", form);
-      localStorage.setItem("fixsi_token", res.data.token);
-      localStorage.setItem("fixsi_user", JSON.stringify(res.data.user));
-      window.dispatchEvent(new Event("serveo:auth-changed"));
+      await api.post("/auth/register", form);
+      clearLegacyAuthStorage();
+      notifyAuthChanged();
       router.push("/dashboard");
     } catch (err: unknown) {
       setError(apiErrorMessage(err, "Não foi possível criar sua conta."));

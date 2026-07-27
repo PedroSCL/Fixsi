@@ -65,12 +65,12 @@ enum ReportStatus {
 // ─── Usuário ──────────────────────────────────────────────────────────────────
 
 model User {
-  id            String  @id @default(cuid())
-  email         String  @unique
+  id            String   @id @default(cuid())
+  email         String   @unique
   password      String
   name          String
   phone         String
-  cpf           String  @unique
+  cpf           String   @unique
   avatarUrl     String?
   asaasWalletId String?
   createdAt     DateTime @default(now())
@@ -80,18 +80,40 @@ model User {
   identityVerification IdentityVerification?
   services             Service[]
   tools                Tool[]
-  bookingsAsClient     Booking[]  @relation("ClientBookings")
-  reviewsWritten       Review[]   @relation("ReviewAuthor")
-  reviewsReceived      Review[]   @relation("ReviewTarget")
-  messagesSent         Message[]  @relation("MessageSender")
-  proposals            Proposal[] @relation("ProposalSender")
-  reportsMade          Report[]   @relation("ReportsMade")
+  bookingsAsClient     Booking[]             @relation("ClientBookings")
+  reviewsWritten       Review[]              @relation("ReviewAuthor")
+  reviewsReceived      Review[]              @relation("ReviewTarget")
+  messagesSent         Message[]             @relation("MessageSender")
+  proposals            Proposal[]            @relation("ProposalSender")
+  reportsMade          Report[]              @relation("ReportsMade")
+  sessions             Session[]
 
   @@index([email])
   @@index([cpf])
 }
 
 // ─── Papéis do usuário ────────────────────────────────────────────────────────
+
+model Session {
+  id                     String    @id @default(cuid())
+  tokenHash              String
+  previousTokenHash      String?
+  previousTokenExpiresAt DateTime?
+  userAgent              String?
+  ipAddress              String?
+  expiresAt              DateTime
+  lastUsedAt             DateTime  @default(now())
+  revokedAt              DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
 
 model UserRole {
   id        String       @id @default(cuid())
@@ -313,7 +335,7 @@ model Report {
   service   Service? @relation(fields: [serviceId], references: [id])
 
   toolId String?
-  tool   Tool?    @relation(fields: [toolId], references: [id])
+  tool   Tool?   @relation(fields: [toolId], references: [id])
 
   @@index([status])
   @@index([serviceId])

@@ -73,6 +73,7 @@ NEXT_PUBLIC_API_URL="http://localhost:3001"
 
 ASAAS_API_KEY="sua_chave_sandbox"
 ASAAS_WEBHOOK_TOKEN="um-token-de-webhook-longo-e-aleatorio"
+ASAAS_ENV="sandbox"
 ```
 
 Nunca publique `.env`, credenciais do banco, chaves Asaas ou segredos JWT.
@@ -125,6 +126,9 @@ pnpm --filter web lint
 # Build da API
 pnpm --filter api build
 
+# Testes automatizados da API
+pnpm --filter api test
+
 # Build completo
 pnpm build
 ```
@@ -139,7 +143,23 @@ pnpm build
 - O webhook de pagamento valida `ASAAS_WEBHOOK_TOKEN`.
 - E-mail e CPF não são alterados pela tela de perfil.
 
-Antes de publicar em produção, migre a sessão para cookies `HttpOnly`, `Secure` e `SameSite`, com fluxo de renovação e revogação de sessão. O armazenamento atual no navegador foi mantido para não quebrar a aplicação existente, mas não é a configuração final recomendada.
+As sessões usam cookies `HttpOnly`, `Secure` em produção e `SameSite`, portanto o JavaScript do navegador não acessa os tokens. O access token expira em 15 minutos e é renovado automaticamente por uma sessão de 30 dias. Refresh tokens são aleatórios, armazenados apenas como hash, rotacionados a cada uso e podem ser revogados no logout. A troca de estado por cookie também exige a origem exata configurada em `FRONTEND_URL`.
+
+### Migração das sessões
+
+A autenticação depende da tabela `Session`. Em desenvolvimento, aplique as migrations ao banco local:
+
+```bash
+pnpm --filter @fixsi/database exec prisma migrate dev
+```
+
+Em produção, depois de revisar o banco de destino e fazer backup:
+
+```bash
+pnpm --filter @fixsi/database exec prisma migrate deploy
+```
+
+Faça o rollout em etapas: primeiro a migration e a API compatível, depois o frontend baseado em cookies e, por último, remova o campo legado `token` das respostas de login e refresh. Nunca execute uma migration de produção apontando para um banco que não foi conferido.
 
 ## Pagamentos
 

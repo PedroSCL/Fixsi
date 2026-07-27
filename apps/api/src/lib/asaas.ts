@@ -1,10 +1,4 @@
-const ASAAS_URL = "https://sandbox.asaas.com/api/v3";
-const ASAAS_KEY = process.env.ASAAS_API_KEY!;
-
-const headers = {
-  access_token: ASAAS_KEY,
-  "Content-Type": "application/json",
-};
+import { getEnvironment } from "../config/env";
 
 interface AsaasCustomer {
   id: string;
@@ -26,15 +20,50 @@ interface AsaasQrCode {
   expirationDate: string;
 }
 
+export function getAsaasBaseUrl(environment: "sandbox" | "production") {
+  return environment === "production"
+    ? "https://api.asaas.com/v3"
+    : "https://api-sandbox.asaas.com/v3";
+}
+
+async function asaasRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const environment = getEnvironment();
+
+  if (!environment.ASAAS_API_KEY) {
+    throw new Error(
+      "Integração Asaas não configurada. Defina ASAAS_API_KEY para usar pagamentos.",
+    );
+  }
+
+  const baseUrl = getAsaasBaseUrl(environment.ASAAS_ENV);
+
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...init,
+    headers: {
+      access_token: environment.ASAAS_API_KEY,
+      "Content-Type": "application/json",
+      "User-Agent": `Serveo/1.0 (Node.js; ${environment.ASAAS_ENV})`,
+      ...init?.headers,
+    },
+  });
+
+  const payload = (await response.json()) as T;
+
+  if (!response.ok) {
+    throw new Error(`Asaas respondeu com status ${response.status}`);
+  }
+
+  return payload;
+}
+
 export async function createAsaasCustomer(user: {
   name: string;
   email: string;
   cpf: string;
   phone: string;
 }): Promise<AsaasCustomer> {
-  const res = await fetch(`${ASAAS_URL}/customers`, {
+  return asaasRequest<AsaasCustomer>("/customers", {
     method: "POST",
-    headers,
     body: JSON.stringify({
       name: user.name,
       email: user.email,
@@ -42,7 +71,6 @@ export async function createAsaasCustomer(user: {
       mobilePhone: user.phone,
     }),
   });
-  return res.json() as Promise<AsaasCustomer>;
 }
 
 export async function createPixCharge(data: {
@@ -51,9 +79,8 @@ export async function createPixCharge(data: {
   description: string;
   externalReference: string;
 }): Promise<AsaasCharge> {
-  const res = await fetch(`${ASAAS_URL}/payments`, {
+  return asaasRequest<AsaasCharge>("/payments", {
     method: "POST",
-    headers,
     body: JSON.stringify({
       customer: data.customerId,
       billingType: "PIX",
@@ -65,14 +92,10 @@ export async function createPixCharge(data: {
       externalReference: data.externalReference,
     }),
   });
-  return res.json() as Promise<AsaasCharge>;
 }
 
 export async function getPixQrCode(paymentId: string): Promise<AsaasQrCode> {
-  const res = await fetch(`${ASAAS_URL}/payments/${paymentId}/pixQrCode`, {
-    headers,
-  });
-  return res.json() as Promise<AsaasQrCode>;
+  return asaasRequest<AsaasQrCode>(`/payments/${paymentId}/pixQrCode`);
 }
 
 export async function releasePayment(paymentId: string) {

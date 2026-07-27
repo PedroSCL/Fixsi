@@ -38,13 +38,13 @@ export default function MessagesPage() {
     [loading, setLoading] = useState(true);
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const stored = localStorage.getItem("fixsi_user");
-    if (!stored) {
-      router.push("/login");
-      return;
-    }
-    setUserId(JSON.parse(stored).id);
-    load();
+    api
+      .get("/auth/me")
+      .then(({ data }) => {
+        setUserId(data.user.id);
+        return load();
+      })
+      .catch(() => router.replace("/login"));
   }, [router]);
   useEffect(() => {
     end.current?.scrollIntoView({ behavior: "smooth" });

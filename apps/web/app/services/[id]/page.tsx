@@ -12,7 +12,7 @@ import {
   Star,
   Wrench,
 } from "lucide-react";
-import { api, apiErrorMessage } from "../../lib/api";
+import { api, apiErrorMessage, isUnauthorized } from "../../lib/api";
 interface ServiceDetail {
   id: string;
   title: string;
@@ -49,10 +49,6 @@ export default function ServiceDetailPage() {
     })();
   }, [id]);
   async function book() {
-    if (!localStorage.getItem("fixsi_token")) {
-      router.push("/login");
-      return;
-    }
     if (!startDate) {
       setError("Selecione uma data para continuar");
       return;
@@ -63,6 +59,10 @@ export default function ServiceDetailPage() {
       await api.post("/bookings", { serviceId: id, startDate });
       setSuccess(true);
     } catch (err: unknown) {
+      if (isUnauthorized(err)) {
+        router.push("/login");
+        return;
+      }
       setError(apiErrorMessage(err, "Não foi possível enviar a solicitação"));
     } finally {
       setBooking(false);

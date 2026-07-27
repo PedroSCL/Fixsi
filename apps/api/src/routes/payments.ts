@@ -8,6 +8,7 @@ import {
   createPixCharge,
   getPixQrCode,
 } from "../lib/asaas";
+import { getEnvironment } from "../config/env";
 
 const checkoutSchema = z.object({
   bookingId: z.string(),
@@ -146,7 +147,9 @@ export async function paymentsRoutes(app: FastifyInstance) {
     // Valida o token do webhook
     const token = request.headers["asaas-access-token"] as string;
 
-    if (token !== process.env.ASAAS_WEBHOOK_TOKEN) {
+    const webhookToken = getEnvironment().ASAAS_WEBHOOK_TOKEN;
+
+    if (!webhookToken || token !== webhookToken) {
       return reply.code(401).send({ error: "Token inválido" });
     }
 

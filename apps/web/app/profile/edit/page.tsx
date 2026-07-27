@@ -11,7 +11,7 @@ import {
   Phone,
   UserRound,
 } from "lucide-react";
-import { api } from "../../lib/api";
+import { api, clearLegacyAuthStorage, notifyAuthChanged } from "../../lib/api";
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -34,9 +34,8 @@ export default function EditProfilePage() {
       })
       .catch((caught: unknown) => {
         if (axios.isAxiosError(caught) && caught.response?.status === 401) {
-          localStorage.removeItem("fixsi_token");
-          localStorage.removeItem("fixsi_user");
-          window.dispatchEvent(new Event("serveo:auth-changed"));
+          clearLegacyAuthStorage();
+          notifyAuthChanged();
           router.replace("/login");
           return;
         }
@@ -54,9 +53,8 @@ export default function EditProfilePage() {
     setSaving(true);
     setError("");
     try {
-      const { data } = await api.patch("/auth/profile", form);
-      localStorage.setItem("fixsi_user", JSON.stringify(data.user));
-      window.dispatchEvent(new Event("serveo:auth-changed"));
+      await api.patch("/auth/profile", form);
+      notifyAuthChanged();
       router.push("/profile");
     } catch (caught) {
       setError(

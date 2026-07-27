@@ -1,8 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
+import { authenticate } from "../plugins/authenticate";
 
 async function requireAdmin(request: any, reply: any) {
-  await request.jwtVerify();
+  await authenticate(request, reply);
+  if (reply.sent) return;
   const userId = (request.user as { id: string }).id;
 
   const adminRole = await prisma.userRole.findUnique({

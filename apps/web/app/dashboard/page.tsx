@@ -16,24 +16,29 @@ import {
   ShieldCheck,
   Star,
 } from "lucide-react";
+import {
+  api,
+  clearLegacyAuthStorage,
+  notifyAuthChanged,
+  User,
+} from "../lib/api";
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<{ name: string; roles: string[] } | null>(
-    null,
-  );
+  const [user, setUser] = useState<User | null>(null);
   useEffect(() => {
-    const stored = localStorage.getItem("fixsi_user");
-    if (!stored) {
-      router.push("/login");
-      return;
-    }
-    setUser(JSON.parse(stored));
+    api
+      .get("/auth/me")
+      .then(({ data }) => setUser(data.user))
+      .catch(() => router.replace("/login"));
   }, [router]);
-  function logout() {
-    localStorage.removeItem("fixsi_token");
-    localStorage.removeItem("fixsi_user");
-    window.dispatchEvent(new Event("serveo:auth-changed"));
-    router.push("/");
+  async function logout() {
+    try {
+      await api.post("/auth/logout");
+    } finally {
+      clearLegacyAuthStorage();
+      notifyAuthChanged();
+      router.push("/");
+    }
   }
   if (!user)
     return (

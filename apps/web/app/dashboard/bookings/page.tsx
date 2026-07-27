@@ -43,11 +43,10 @@ export default function BookingsPage() {
     [loading, setLoading] = useState(true),
     [completing, setCompleting] = useState<string | null>(null);
   useEffect(() => {
-    if (!localStorage.getItem("fixsi_user")) {
-      router.push("/login");
-      return;
-    }
-    load();
+    api
+      .get("/auth/me")
+      .then(() => load())
+      .catch(() => router.replace("/login"));
   }, [router]);
   async function load() {
     try {

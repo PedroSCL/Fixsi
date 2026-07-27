@@ -3,7 +3,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
-import { api, apiErrorMessage } from "../lib/api";
+import {
+  api,
+  apiErrorMessage,
+  clearLegacyAuthStorage,
+  notifyAuthChanged,
+} from "../lib/api";
 import { Brand } from "../components/Brand";
 
 export default function LoginPage() {
@@ -17,10 +22,9 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await api.post("/auth/login", { email, password });
-      localStorage.setItem("fixsi_token", res.data.token);
-      localStorage.setItem("fixsi_user", JSON.stringify(res.data.user));
-      window.dispatchEvent(new Event("serveo:auth-changed"));
+      await api.post("/auth/login", { email, password });
+      clearLegacyAuthStorage();
+      notifyAuthChanged();
       router.push("/dashboard");
     } catch (err: unknown) {
       setError(

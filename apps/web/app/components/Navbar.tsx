@@ -4,17 +4,20 @@ import Link from "next/link";
 import { Menu, Search, UserRound, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { Brand } from "./Brand";
+import { api, User } from "../lib/api";
 
 export function Navbar() {
-  const [user, setUser] = useState<{ name: string } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   useEffect(() => {
     function syncSession() {
-      const stored = localStorage.getItem("fixsi_user");
-      setUser(stored ? JSON.parse(stored) : null);
+      api
+        .get("/auth/me")
+        .then(({ data }) => setUser(data.user))
+        .catch(() => setUser(null));
     }
     syncSession();
     setOpen(false);
