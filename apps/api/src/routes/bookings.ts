@@ -31,7 +31,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
       where: { userId_type: { userId: clientId, type: "CLIENT" } },
     });
 
-    if (!role) {
+    if (!role?.active) {
       return reply.code(403).send({
         error: "Apenas Clientes podem fazer agendamentos",
       });

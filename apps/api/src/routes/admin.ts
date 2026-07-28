@@ -11,7 +11,7 @@ async function requireAdmin(request: any, reply: any) {
     where: { userId_type: { userId, type: "ADMIN" } },
   });
 
-  if (!adminRole) {
+  if (!adminRole?.active) {
     return reply.code(403).send({ error: "Acesso restrito a administradores" });
   }
 }

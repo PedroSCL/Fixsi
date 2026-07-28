@@ -134,7 +134,7 @@ export async function toolsRoutes(app: FastifyInstance) {
       where: { userId_type: { userId, type: "LOCADOR" } },
     });
 
-    if (!role) {
+    if (!role?.active) {
       return reply.code(403).send({
         error: "Apenas Locadores podem cadastrar ferramentas",
       });

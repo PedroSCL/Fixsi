@@ -133,7 +133,7 @@ export async function servicesRoutes(app: FastifyInstance) {
       where: { userId_type: { userId, type: "PROFESSIONAL" } },
     });
 
-    if (!role) {
+    if (!role?.active) {
       return reply.code(403).send({
         error: "Apenas Profissionais podem criar serviços",
       });

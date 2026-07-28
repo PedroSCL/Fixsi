@@ -10,6 +10,7 @@ import {
   Tag,
 } from "lucide-react";
 import { api, apiErrorMessage } from "../../../lib/api";
+import { useRequireRole } from "../../../lib/use-require-role";
 const CATEGORIES = [
   "Elétrica",
   "Hidráulica",
@@ -23,6 +24,7 @@ const CATEGORIES = [
 ];
 export default function NewServicePage() {
   const router = useRouter();
+  const allowed = useRequireRole("PROFESSIONAL");
   const [loading, setLoading] = useState(false),
     [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -50,6 +52,13 @@ export default function NewServicePage() {
     } finally {
       setLoading(false);
     }
+  }
+  if (!allowed) {
+    return (
+      <div className="flex min-h-96 items-center justify-center text-[#667085]">
+        Verificando acesso...
+      </div>
+    );
   }
   return (
     <main className="page-shell max-w-3xl py-10">
