@@ -29,8 +29,10 @@ async function main() {
   await app.register(helmet);
 
   await app.register(rateLimit, {
-    max: 100,
-    timeWindow: "1 minute",
+    // Limites globais por IP podem agrupar usuários atrás do proxy/CDN e
+    // bloquear o aplicativo inteiro. Rotas sensíveis, como login, cadastro e
+    // renovação de sessão, mantêm limites próprios mais restritivos.
+    global: false,
   });
 
   await app.register(cors, {
