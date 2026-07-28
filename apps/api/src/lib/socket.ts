@@ -10,9 +10,10 @@ export function setupSocket(
   jwt: { verify: (token: string) => unknown },
 ) {
   const environment = getEnvironment();
+  const allowedOrigin = new URL(environment.FRONTEND_URL).origin;
   const io = new SocketServer(httpServer, {
     cors: {
-      origin: environment.FRONTEND_URL,
+      origin: allowedOrigin,
       methods: ["GET", "POST"],
       credentials: true,
     },

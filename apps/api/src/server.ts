@@ -36,6 +36,7 @@ async function main() {
   await app.register(cors, {
     // Normaliza uma eventual barra final configurada no provedor.
     origin: allowedOrigin,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   });
 
