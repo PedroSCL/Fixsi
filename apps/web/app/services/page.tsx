@@ -6,11 +6,13 @@ import { useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   Filter,
+  RefreshCw,
   Search,
   SlidersHorizontal,
   Star,
 } from "lucide-react";
-import { api, Service } from "../lib/api";
+import axios from "axios";
+import { api, apiErrorMessage, Service } from "../lib/api";
 
 const CATEGORIES = [
   "Todos",
@@ -35,10 +37,12 @@ function ServicesContent() {
   const params = useSearchParams();
   const [services, setServices] = useState<Service[]>([]),
     [loading, setLoading] = useState(true),
+    [loadError, setLoadError] = useState<string | null>(null),
     [search, setSearch] = useState(params.get("search") || ""),
     [category, setCategory] = useState(params.get("category") || "");
   async function load() {
     setLoading(true);
+    setLoadError(null);
     try {
       const query = new URLSearchParams();
       if (search.trim()) query.set("search", search.trim());
@@ -47,6 +51,14 @@ function ServicesContent() {
     } catch (err) {
       console.error(err);
       setServices([]);
+      setLoadError(
+        axios.isAxiosError(err) && err.response?.status === 429
+          ? "Muitas consultas foram realizadas em pouco tempo. Aguarde alguns segundos e tente novamente."
+          : apiErrorMessage(
+              err,
+              "Não foi possível carregar os serviços. Verifique sua conexão e tente novamente.",
+            ),
+      );
     } finally {
       setLoading(false);
     }
@@ -124,6 +136,29 @@ function ServicesContent() {
               />
             ))}
           </div>
+        ) : loadError ? (
+          <section
+            className="surface-card mt-8 p-12 text-center"
+            role="alert"
+          >
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF1E8] text-[#F97316]">
+              <RefreshCw size={27} />
+            </span>
+            <h2 className="mt-4 text-xl font-extrabold text-[#17233B]">
+              Não foi possível carregar os serviços
+            </h2>
+            <p className="mx-auto mt-2 max-w-lg text-[#667085]">
+              {loadError}
+            </p>
+            <button
+              type="button"
+              onClick={load}
+              className="btn-primary mt-6 inline-flex items-center gap-2 px-5 py-3"
+            >
+              <RefreshCw size={17} />
+              Tentar novamente
+            </button>
+          </section>
         ) : services.length === 0 ? (
           <section className="surface-card mt-8 p-12 text-center">
             <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF1E8] text-[#F97316]">

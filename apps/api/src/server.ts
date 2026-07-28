@@ -18,10 +18,13 @@ import { paymentsRoutes } from "./routes/payments";
 import { getEnvironment } from "./config/env";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "./lib/session";
 
-const app = Fastify({ logger: true });
+// O Render encaminha o IP original pelo proxy. Sem essa opção, todos os
+// visitantes podem compartilhar o IP do balanceador e esgotar o rate limit.
+const app = Fastify({ logger: true, trustProxy: true });
 
 async function main() {
   const environment = getEnvironment();
+  const allowedOrigin = new URL(environment.FRONTEND_URL).origin;
 
   await app.register(helmet);
 
@@ -31,7 +34,8 @@ async function main() {
   });
 
   await app.register(cors, {
-    origin: environment.FRONTEND_URL,
+    // Normaliza uma eventual barra final configurada no provedor.
+    origin: allowedOrigin,
     credentials: true,
   });
 
@@ -73,7 +77,6 @@ async function main() {
     return reply.code(500).send({ error: "Erro interno do servidor" });
   });
 
-  const allowedOrigin = new URL(environment.FRONTEND_URL).origin;
   const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
   app.addHook("onRequest", async (request, reply) => {
