@@ -1,13 +1,15 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- imagens dos anúncios vêm de URLs cadastradas pelos usuários */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import axios from "axios";
 import {
   ArrowLeft,
   CalendarDays,
   Check,
   MessageCircle,
+  RefreshCw,
   ShieldCheck,
   Star,
   Wrench,
@@ -33,21 +35,34 @@ export default function ServiceDetailPage() {
     dateRef = useRef<HTMLInputElement>(null);
   const [service, setService] = useState<ServiceDetail | null>(null),
     [loading, setLoading] = useState(true),
+    [loadError, setLoadError] = useState(""),
     [booking, setBooking] = useState(false),
     [startDate, setStartDate] = useState(""),
     [success, setSuccess] = useState(false),
     [error, setError] = useState("");
-  useEffect(() => {
-    (async () => {
-      try {
-        setService((await api.get(`/services/${id}`)).data.service);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const loadService = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      setService((await api.get(`/services/${id}`)).data.service);
+    } catch (err) {
+      console.error(err);
+      setService(null);
+      setLoadError(
+        axios.isAxiosError(err) && err.response?.status === 404
+          ? "Serviço não encontrado"
+          : apiErrorMessage(
+              err,
+              "Não foi possível carregar este serviço. Tente novamente.",
+            ),
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
+  useEffect(() => {
+    loadService();
+  }, [loadService]);
   async function book() {
     if (!startDate) {
       setError("Selecione uma data para continuar");
@@ -74,15 +89,27 @@ export default function ServiceDetailPage() {
         Carregando serviço...
       </div>
     );
-  if (!service)
+  if (loadError)
     return (
       <div className="flex min-h-96 flex-col items-center justify-center gap-4">
-        <h1 className="text-xl font-extrabold">Serviço não encontrado</h1>
-        <Link href="/services" className="btn-secondary">
-          Voltar para profissionais
-        </Link>
+        <h1 className="text-xl font-extrabold">{loadError}</h1>
+        <div className="flex flex-wrap justify-center gap-3">
+          {loadError !== "Serviço não encontrado" && (
+            <button
+              type="button"
+              onClick={loadService}
+              className="btn-primary"
+            >
+              <RefreshCw size={17} /> Tentar novamente
+            </button>
+          )}
+          <Link href="/services" className="btn-secondary">
+            Voltar para profissionais
+          </Link>
+        </div>
       </div>
     );
+  if (!service) return null;
   const reviews = service.user.reviewsReceived,
     avg = reviews.length
       ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
