@@ -23,7 +23,7 @@ function commonCookieOptions() {
   return {
     secure: environment.NODE_ENV === "production",
     httpOnly: true,
-    sameSite: environment.NODE_ENV === "production" ? "none" : "lax",
+    sameSite: "lax",
   } as const;
 }
 
@@ -49,7 +49,9 @@ function setSessionCookies(
     })
     .setCookie(REFRESH_COOKIE, refreshToken, {
       ...common,
-      path: "/auth",
+      // O frontend acessa a API pelo proxy /api da Vercel. O caminho raiz
+      // mantém a renovação disponível tanto via proxy quanto diretamente.
+      path: "/",
       maxAge: REFRESH_TTL_SECONDS,
     });
 }
@@ -59,7 +61,7 @@ export function clearSessionCookies(reply: FastifyReply) {
 
   reply
     .clearCookie(ACCESS_COOKIE, { ...common, path: "/" })
-    .clearCookie(REFRESH_COOKIE, { ...common, path: "/auth" });
+    .clearCookie(REFRESH_COOKIE, { ...common, path: "/" });
 }
 
 function createAccessToken(

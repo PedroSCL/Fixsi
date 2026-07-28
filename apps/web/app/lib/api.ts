@@ -1,9 +1,9 @@
 import axios, { InternalAxiosRequestConfig } from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
 export const api = axios.create({
-  baseURL: API_URL,
+  // A Vercel encaminha /api para o backend. Manter a chamada na mesma origem
+  // evita bloqueios de cookies e de rede comuns em navegadores móveis.
+  baseURL: "/api",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
