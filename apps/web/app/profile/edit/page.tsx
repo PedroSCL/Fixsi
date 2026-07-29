@@ -7,16 +7,29 @@ import axios from "axios";
 import {
   ArrowLeft,
   Check,
+  IdCard,
   Image as ImageIcon,
+  LockKeyhole,
   Phone,
+  ShieldAlert,
   UserRound,
 } from "lucide-react";
 import { api, clearLegacyAuthStorage, notifyAuthChanged } from "../../lib/api";
+import { formatCpf, isValidCpf, normalizeCpf } from "../../lib/cpf";
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", phone: "", avatarUrl: "" });
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    avatarUrl: "",
+    cpf: "",
+    currentPassword: "",
+  });
   const [email, setEmail] = useState("");
+  const [cpfMasked, setCpfMasked] = useState("");
+  const [cpfIsValid, setCpfIsValid] = useState(true);
+  const [correctingCpf, setCorrectingCpf] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -29,8 +42,13 @@ export default function EditProfilePage() {
           name: data.user.name,
           phone: data.user.phone,
           avatarUrl: data.user.avatarUrl || "",
+          cpf: "",
+          currentPassword: "",
         });
         setEmail(data.user.email);
+        setCpfMasked(data.user.cpfMasked);
+        setCpfIsValid(data.user.cpfValid);
+        setCorrectingCpf(!data.user.cpfValid);
       })
       .catch((caught: unknown) => {
         if (axios.isAxiosError(caught) && caught.response?.status === 401) {
@@ -52,8 +70,28 @@ export default function EditProfilePage() {
     event.preventDefault();
     setSaving(true);
     setError("");
+    if (correctingCpf && !isValidCpf(form.cpf)) {
+      setError("Informe um CPF válido antes de salvar.");
+      setSaving(false);
+      return;
+    }
+    if (correctingCpf && !form.currentPassword) {
+      setError("Informe sua senha atual para confirmar a alteração do CPF.");
+      setSaving(false);
+      return;
+    }
     try {
-      await api.patch("/auth/profile", form);
+      await api.patch("/auth/profile", {
+        name: form.name,
+        phone: form.phone,
+        avatarUrl: form.avatarUrl,
+        ...(correctingCpf
+          ? {
+              cpf: normalizeCpf(form.cpf),
+              currentPassword: form.currentPassword,
+            }
+          : {}),
+      });
       notifyAuthChanged();
       router.push("/profile");
     } catch (caught) {
@@ -136,6 +174,90 @@ export default function EditProfilePage() {
               required
             />
           </Field>
+          <div className="rounded-2xl border border-[#E7E2DA] bg-[#FCFBF9] p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-extrabold text-[#17233B]">CPF</p>
+                <p className="mt-1 font-semibold text-[#667085]">{cpfMasked}</p>
+                <p
+                  className={`mt-2 flex items-center gap-1.5 text-xs font-bold ${
+                    cpfIsValid ? "text-emerald-700" : "text-red-700"
+                  }`}
+                >
+                  {!cpfIsValid && <ShieldAlert size={15} />}
+                  {cpfIsValid
+                    ? "Documento validado."
+                    : "O CPF atual é inválido e precisa ser corrigido para realizar pagamentos."}
+                </p>
+              </div>
+              {cpfIsValid && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCorrectingCpf((current) => !current);
+                    setForm((current) => ({
+                      ...current,
+                      cpf: "",
+                      currentPassword: "",
+                    }));
+                  }}
+                  className="btn-secondary shrink-0"
+                >
+                  <IdCard size={17} />
+                  {correctingCpf ? "Manter CPF atual" : "Alterar CPF"}
+                </button>
+              )}
+            </div>
+
+            {correctingCpf && (
+              <div className="mt-5 grid gap-5 border-t border-[#E7E2DA] pt-5 sm:grid-cols-2">
+                <Field icon={IdCard} label="Novo CPF">
+                  <input
+                    className={`field field-with-leading ${
+                      normalizeCpf(form.cpf).length === 11
+                        ? isValidCpf(form.cpf)
+                          ? "border-emerald-500"
+                          : "border-red-400"
+                        : ""
+                    }`}
+                    value={formatCpf(form.cpf)}
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        cpf: normalizeCpf(event.target.value),
+                      })
+                    }
+                    placeholder="000.000.000-00"
+                    inputMode="numeric"
+                    maxLength={14}
+                    required
+                  />
+                </Field>
+                <Field icon={LockKeyhole} label="Senha atual">
+                  <input
+                    className="field field-with-leading"
+                    type="password"
+                    value={form.currentPassword}
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        currentPassword: event.target.value,
+                      })
+                    }
+                    placeholder="Confirme sua identidade"
+                    autoComplete="current-password"
+                    maxLength={128}
+                    required
+                  />
+                </Field>
+                <p className="text-xs leading-5 text-[#667085] sm:col-span-2">
+                  Por segurança, o CPF só é alterado após validar sua senha.
+                  Depois da correção, o cadastro de pagamento será sincronizado
+                  novamente com o Asaas.
+                </p>
+              </div>
+            )}
+          </div>
           <Field icon={ImageIcon} label="URL da foto (opcional)">
             <input
               className="field field-with-leading"

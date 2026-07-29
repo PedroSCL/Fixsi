@@ -9,6 +9,12 @@ import {
   revokeSession,
   rotateSession,
 } from "../lib/session";
+import { isValidCpf, maskCpf, normalizeCpf } from "../lib/cpf";
+
+const cpfSchema = z
+  .string()
+  .transform(normalizeCpf)
+  .refine(isValidCpf, "Informe um CPF válido");
 
 const registerSchema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -28,7 +34,7 @@ const registerSchema = z.object({
       "Senha deve conter pelo menos um caractere especial",
     ),
   phone: z.string().min(10, "Telefone inválido"),
-  cpf: z.string().length(11, "CPF deve ter 11 dígitos"),
+  cpf: cpfSchema,
   role: z.enum(["CLIENT", "PROFESSIONAL", "LOCADOR"]).default("CLIENT"),
 });
 
@@ -41,13 +47,25 @@ const loginSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
-const updateProfileSchema = z.object({
-  name: z.string().trim().min(2).max(100),
-  phone: z.string().trim().min(10).max(15),
-  avatarUrl: z
-    .union([z.string().trim().url(), z.literal(""), z.null()])
-    .optional(),
-});
+const updateProfileSchema = z
+  .object({
+    name: z.string().trim().min(2).max(100),
+    phone: z.string().trim().min(10).max(15),
+    avatarUrl: z
+      .union([z.string().trim().url(), z.literal(""), z.null()])
+      .optional(),
+    cpf: cpfSchema.optional(),
+    currentPassword: z.string().min(1).max(128).optional(),
+  })
+  .superRefine((values, context) => {
+    if (values.cpf && !values.currentPassword) {
+      context.addIssue({
+        code: "custom",
+        path: ["currentPassword"],
+        message: "Informe sua senha atual para alterar o CPF",
+      });
+    }
+  });
 
 export async function authRoutes(app: FastifyInstance) {
   // Cadastro
@@ -201,6 +219,7 @@ export async function authRoutes(app: FastifyInstance) {
         name: true,
         email: true,
         phone: true,
+        cpf: true,
         avatarUrl: true,
         createdAt: true,
         roles: {
@@ -214,9 +233,12 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Usuário não encontrado" });
     }
 
+    const { cpf, ...safeUser } = user;
     return reply.send({
       user: {
-        ...user,
+        ...safeUser,
+        cpfMasked: maskCpf(cpf),
+        cpfValid: isValidCpf(cpf),
         roles: user.roles.map((role) => role.type),
       },
     });
@@ -224,22 +246,65 @@ export async function authRoutes(app: FastifyInstance) {
 
   app.patch(
     "/profile",
-    { preHandler: [authenticate] },
+    {
+      preHandler: [authenticate],
+      config: { rateLimit: { max: 10, timeWindow: "10 minutes" } },
+    },
     async (request, reply) => {
       const userId = (request.user as { id: string }).id;
       const body = updateProfileSchema.parse(request.body);
+      const currentUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { cpf: true, password: true },
+      });
+
+      if (!currentUser) {
+        return reply.code(404).send({ error: "Usuário não encontrado" });
+      }
+
+      const cpfChanged = Boolean(body.cpf && body.cpf !== currentUser.cpf);
+
+      if (cpfChanged) {
+        const validPassword = await bcrypt.compare(
+          body.currentPassword || "",
+          currentUser.password,
+        );
+        if (!validPassword) {
+          return reply.code(403).send({ error: "Senha atual incorreta" });
+        }
+
+        const existingCpf = await prisma.user.findFirst({
+          where: {
+            cpf: body.cpf,
+            id: { not: userId },
+          },
+          select: { id: true },
+        });
+        if (existingCpf) {
+          return reply.code(409).send({ error: "CPF já cadastrado" });
+        }
+      }
+
       const user = await prisma.user.update({
         where: { id: userId },
         data: {
           name: body.name,
           phone: body.phone,
           avatarUrl: body.avatarUrl || null,
+          ...(cpfChanged
+            ? {
+                cpf: body.cpf,
+                // O cliente do Asaas precisa ser recriado com o novo documento.
+                asaasWalletId: null,
+              }
+            : {}),
         },
         select: {
           id: true,
           name: true,
           email: true,
           phone: true,
+          cpf: true,
           avatarUrl: true,
           roles: {
             where: { active: true },
@@ -248,9 +313,12 @@ export async function authRoutes(app: FastifyInstance) {
         },
       });
 
+      const { cpf, ...safeUser } = user;
       return reply.send({
         user: {
-          ...user,
+          ...safeUser,
+          cpfMasked: maskCpf(cpf),
+          cpfValid: isValidCpf(cpf),
           roles: user.roles.map((role) => role.type),
         },
       });

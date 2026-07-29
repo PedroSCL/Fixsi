@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   BriefcaseBusiness,
   Check,
+  CircleCheck,
   Drill,
   UserRound,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import {
   clearLegacyAuthStorage,
   notifyAuthChanged,
 } from "../lib/api";
+import { formatCpf, isValidCpf, normalizeCpf } from "../lib/cpf";
 
 const roles = [
   {
@@ -51,9 +53,16 @@ export default function RegisterPage() {
   });
   const update = (field: string, value: string) =>
     setForm((p) => ({ ...p, [field]: value }));
+  const cpfValid = isValidCpf(form.cpf);
+  const cpfComplete = normalizeCpf(form.cpf).length === 11;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    if (!cpfValid) {
+      setError("Informe um CPF válido para criar sua conta.");
+      return;
+    }
     setLoading(true);
     try {
       await api.post("/auth/register", form);
@@ -178,16 +187,40 @@ export default function RegisterPage() {
                 <label className="block text-sm font-extrabold text-[#17233B]">
                   CPF
                   <input
-                    value={form.cpf}
+                    value={formatCpf(form.cpf)}
                     onChange={(e) =>
-                      update("cpf", e.target.value.replace(/\D/g, ""))
+                      update("cpf", normalizeCpf(e.target.value))
                     }
-                    maxLength={11}
+                    maxLength={14}
                     required
-                    className="field mt-2"
-                    placeholder="Somente números"
+                    className={`field mt-2 ${
+                      cpfComplete
+                        ? cpfValid
+                          ? "border-emerald-500"
+                          : "border-red-400"
+                        : ""
+                    }`}
+                    placeholder="000.000.000-00"
                     inputMode="numeric"
+                    autoComplete="off"
+                    aria-invalid={cpfComplete && !cpfValid}
                   />
+                  <span
+                    className={`mt-2 flex items-center gap-1.5 text-xs font-semibold ${
+                      cpfComplete && !cpfValid
+                        ? "text-red-600"
+                        : cpfValid
+                          ? "text-emerald-700"
+                          : "text-[#667085]"
+                    }`}
+                  >
+                    {cpfValid && <CircleCheck size={14} />}
+                    {cpfComplete && !cpfValid
+                      ? "Os dígitos verificadores não correspondem a um CPF válido."
+                      : cpfValid
+                        ? "CPF válido."
+                        : "Informe os 11 dígitos do CPF."}
+                  </span>
                 </label>
                 <label className="block text-sm font-extrabold text-[#17233B]">
                   Telefone
@@ -225,7 +258,11 @@ export default function RegisterPage() {
                   Voltar
                 </button>
                 <button
-                  disabled={loading || !form.cpf || !form.phone}
+                  disabled={
+                    loading ||
+                    !cpfValid ||
+                    form.phone.replace(/\D/g, "").length < 10
+                  }
                   className="btn-primary disabled:opacity-50"
                 >
                   {loading ? "Criando..." : "Criar conta"}

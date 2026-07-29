@@ -22,6 +22,7 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const needsCpfCorrection = /cpf|cnpj/i.test(error);
 
   async function createPayment() {
     setLoading(true);
@@ -81,12 +82,20 @@ export default function PaymentPage() {
               </p>
             </div>
             {error && (
-              <p
+              <div
                 role="alert"
                 className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
               >
-                {error}
-              </p>
+                <p>{error}</p>
+                {needsCpfCorrection && (
+                  <Link
+                    href="/profile/edit"
+                    className="mt-2 inline-flex rounded-lg bg-white px-3 py-2 text-xs font-extrabold text-red-700 shadow-sm hover:bg-red-100"
+                  >
+                    Corrigir CPF no perfil
+                  </Link>
+                )}
+              </div>
             )}
             <button
               onClick={createPayment}
