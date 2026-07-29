@@ -274,7 +274,8 @@ export async function paymentsRoutes(app: FastifyInstance) {
     return reply.send({ received: true });
   });
 
-  // Liberar pagamento pro profissional (após conclusão)
+  // O repasse real ainda não está integrado. O endpoint permanece bloqueado
+  // para impedir que um status local seja confundido com transferência feita.
   app.post(
     "/:id/release",
     { preHandler: [authenticate] },
@@ -299,46 +300,14 @@ export async function paymentsRoutes(app: FastifyInstance) {
         return reply.code(404).send({ error: "Pagamento não encontrado" });
       }
 
-      // Só o cliente pode liberar
+      // Só o cliente responsável pode consultar esta operação.
       if (payment.booking.clientId !== userId) {
         return reply.code(403).send({ error: "Sem permissão" });
       }
 
-      // Só libera se o booking estiver concluído
-      if (payment.booking.status !== "COMPLETED") {
-        return reply.code(400).send({
-          error:
-            "O serviço precisa estar concluído antes de liberar o pagamento",
-        });
-      }
-
-      // Verifica se ambos avaliaram
-      const reviews = payment.booking.reviews;
-      const clientReview = reviews.find(
-        (r) => r.authorId === payment.booking.clientId,
-      );
-      const providerId =
-        payment.booking.service?.userId || payment.booking.tool?.userId;
-      const providerReview = reviews.find((r) => r.authorId === providerId);
-
-      if (!clientReview || !providerReview) {
-        return reply.code(400).send({
-          error:
-            "Ambas as partes precisam avaliar antes de liberar o pagamento",
-        });
-      }
-
-      // Libera o pagamento
-      await prisma.payment.update({
-        where: { id },
-        data: {
-          status: "RELEASED",
-          releasedAt: new Date(),
-        },
-      });
-
-      return reply.send({
-        message: "Pagamento liberado para o profissional com sucesso",
+      return reply.code(501).send({
+        error:
+          "O repasse ao profissional ainda não está configurado. Nenhuma transferência foi realizada.",
       });
     },
   );

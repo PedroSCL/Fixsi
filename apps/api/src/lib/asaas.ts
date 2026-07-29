@@ -158,7 +158,3 @@ export function asaasPublicErrorMessage(error: unknown) {
 
   return "O serviço de pagamento está temporariamente indisponível. Tente novamente mais tarde.";
 }
-
-export async function releasePayment(paymentId: string) {
-  return { success: true, paymentId };
-}

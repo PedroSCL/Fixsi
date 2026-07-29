@@ -197,12 +197,13 @@ model Tool {
 // ─── Agendamento / Pedido ─────────────────────────────────────────────────────
 
 model Booking {
-  id        String        @id @default(cuid())
-  status    BookingStatus @default(PENDING)
-  startDate DateTime
-  endDate   DateTime?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id                  String        @id @default(cuid())
+  status              BookingStatus @default(PENDING)
+  startDate           DateTime
+  endDate             DateTime?
+  providerCompletedAt DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
   clientId String
   client   User   @relation("ClientBookings", fields: [clientId], references: [id])

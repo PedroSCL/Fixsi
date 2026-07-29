@@ -14,10 +14,12 @@ import {
 import { api, apiErrorMessage } from "../../lib/api";
 interface Booking {
   id: string;
+  clientId: string;
   status: string;
   startDate: string;
-  service?: { id: string; title: string; category: string };
-  tool?: { id: string; title: string; category: string };
+  providerCompletedAt?: string | null;
+  service?: { id: string; title: string; category: string; userId: string };
+  tool?: { id: string; title: string; category: string; userId: string };
   proposal?: { amount: number; status: string } | null;
   conversation: { id: string };
 }
@@ -40,12 +42,17 @@ const STATUS: Record<string, { label: string; classes: string }> = {
 export default function BookingsPage() {
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]),
+    [userId, setUserId] = useState(""),
     [loading, setLoading] = useState(true),
-    [completing, setCompleting] = useState<string | null>(null);
+    [completing, setCompleting] = useState<string | null>(null),
+    [actionError, setActionError] = useState<string | null>(null);
   useEffect(() => {
     api
       .get("/auth/me")
-      .then(() => load())
+      .then(({ data }) => {
+        setUserId(data.user.id);
+        return load();
+      })
       .catch(() => router.replace("/login"));
   }, [router]);
   async function load() {
@@ -57,13 +64,28 @@ export default function BookingsPage() {
       setLoading(false);
     }
   }
-  async function complete(id: string) {
+  async function finish(id: string) {
     setCompleting(id);
+    setActionError(null);
+    try {
+      await api.patch(`/bookings/${id}/finish`);
+      await load();
+    } catch (err: unknown) {
+      setActionError(apiErrorMessage(err, "Não foi possível finalizar"));
+    } finally {
+      setCompleting(null);
+    }
+  }
+  async function confirmCompletion(id: string) {
+    setCompleting(id);
+    setActionError(null);
     try {
       await api.patch(`/bookings/${id}/complete`);
       await load();
     } catch (err: unknown) {
-      alert(apiErrorMessage(err, "Não foi possível concluir"));
+      setActionError(
+        apiErrorMessage(err, "Não foi possível confirmar a conclusão"),
+      );
     } finally {
       setCompleting(null);
     }
@@ -98,6 +120,14 @@ export default function BookingsPage() {
           {bookings.length} {bookings.length === 1 ? "pedido" : "pedidos"}
         </span>
       </header>
+      {actionError && (
+        <div
+          role="alert"
+          className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
+        >
+          {actionError}
+        </div>
+      )}
       {bookings.length === 0 ? (
         <section className="surface-card mt-8 p-12 text-center">
           <Package className="mx-auto text-[#F97316]" size={38} />
@@ -114,6 +144,9 @@ export default function BookingsPage() {
       ) : (
         <section className="mt-8 space-y-4">
           {bookings.map((b) => {
+            const isClient = b.clientId === userId;
+            const isProvider =
+              b.service?.userId === userId || b.tool?.userId === userId;
             const status = STATUS[b.status] || {
               label: b.status,
               classes: "bg-slate-100 text-slate-700",
@@ -156,17 +189,49 @@ export default function BookingsPage() {
                     <MessageCircle size={18} />
                     <span className="hidden xl:inline">Mensagem</span>
                   </Link>
-                  {b.status === "IN_PROGRESS" && (
-                    <button
-                      onClick={() => complete(b.id)}
-                      disabled={completing === b.id}
-                      className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-extrabold text-white disabled:opacity-60"
-                    >
-                      <CheckCircle2 size={17} />
-                      {completing === b.id ? "Concluindo..." : "Concluir"}
-                    </button>
-                  )}
-                  {b.status === "AWAITING_PAYMENT" && (
+                  {b.status === "IN_PROGRESS" &&
+                    isProvider &&
+                    !b.providerCompletedAt && (
+                      <button
+                        onClick={() => finish(b.id)}
+                        disabled={completing === b.id}
+                        className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-extrabold text-white disabled:opacity-60"
+                      >
+                        <CheckCircle2 size={17} />
+                        {completing === b.id
+                          ? "Finalizando..."
+                          : "Finalizar serviço"}
+                      </button>
+                    )}
+                  {b.status === "IN_PROGRESS" &&
+                    isProvider &&
+                    b.providerCompletedAt && (
+                      <span className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
+                        Aguardando confirmação do cliente
+                      </span>
+                    )}
+                  {b.status === "IN_PROGRESS" &&
+                    isClient &&
+                    b.providerCompletedAt && (
+                      <button
+                        onClick={() => confirmCompletion(b.id)}
+                        disabled={completing === b.id}
+                        className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-extrabold text-white disabled:opacity-60"
+                      >
+                        <CheckCircle2 size={17} />
+                        {completing === b.id
+                          ? "Confirmando..."
+                          : "Confirmar conclusão"}
+                      </button>
+                    )}
+                  {b.status === "IN_PROGRESS" &&
+                    isClient &&
+                    !b.providerCompletedAt && (
+                      <span className="rounded-xl bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+                        Serviço em andamento
+                      </span>
+                    )}
+                  {b.status === "AWAITING_PAYMENT" && isClient && (
                     <Link
                       href={`/dashboard/bookings/${b.id}/payment`}
                       className="btn-primary min-h-10 px-4 py-2 text-sm"

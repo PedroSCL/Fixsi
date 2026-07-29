@@ -97,8 +97,12 @@ export async function bookingsRoutes(app: FastifyInstance) {
       where: { id: booking.id },
       include: {
         conversation: true,
-        service: { select: { id: true, title: true, category: true } },
-        tool: { select: { id: true, title: true, category: true } },
+        service: {
+          select: { id: true, title: true, category: true, userId: true },
+        },
+        tool: {
+          select: { id: true, title: true, category: true, userId: true },
+        },
         client: { select: { id: true, name: true } },
       },
     });
@@ -119,8 +123,12 @@ export async function bookingsRoutes(app: FastifyInstance) {
         ],
       },
       include: {
-        service: { select: { id: true, title: true, category: true } },
-        tool: { select: { id: true, title: true, category: true } },
+        service: {
+          select: { id: true, title: true, category: true, userId: true },
+        },
+        tool: {
+          select: { id: true, title: true, category: true, userId: true },
+        },
         conversation: { select: { id: true } },
         proposal: true,
         payment: { select: { status: true, amount: true } },
@@ -319,7 +327,58 @@ export async function bookingsRoutes(app: FastifyInstance) {
     },
   );
 
-  // Cliente confirma conclusão do serviço
+  // O profissional informa que terminou. O booking continua em andamento até
+  // o cliente confirmar a entrega.
+  app.patch(
+    "/:id/finish",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const userId = (request.user as { id: string }).id;
+
+      const booking = await prisma.booking.findUnique({
+        where: { id },
+        include: {
+          service: { select: { userId: true } },
+          tool: { select: { userId: true } },
+        },
+      });
+
+      if (!booking) {
+        return reply.code(404).send({ error: "Booking não encontrado" });
+      }
+
+      const providerId = booking.service?.userId || booking.tool?.userId;
+      if (providerId !== userId) {
+        return reply.code(403).send({
+          error: "Apenas o profissional responsável pode informar a conclusão",
+        });
+      }
+
+      if (booking.status !== "IN_PROGRESS") {
+        return reply.code(409).send({
+          error: "Só é possível finalizar um serviço em andamento",
+        });
+      }
+
+      if (booking.providerCompletedAt) {
+        return reply.send({
+          message: "Conclusão já informada. Aguardando confirmação do cliente.",
+        });
+      }
+
+      await prisma.booking.update({
+        where: { id },
+        data: { providerCompletedAt: new Date() },
+      });
+
+      return reply.send({
+        message: "Serviço finalizado. Aguardando confirmação do cliente.",
+      });
+    },
+  );
+
+  // O cliente confirma a entrega depois que o profissional informa a conclusão.
   app.patch(
     "/:id/complete",
     { preHandler: [authenticate] },
@@ -337,12 +396,21 @@ export async function bookingsRoutes(app: FastifyInstance) {
       }
 
       if (booking.clientId !== userId) {
-        return reply.code(403).send({ error: "Sem permissão" });
+        return reply.code(403).send({
+          error: "Apenas o cliente pode confirmar a entrega do serviço",
+        });
       }
 
       if (booking.status !== "IN_PROGRESS") {
-        return reply.code(400).send({
-          error: "Só é possível concluir bookings em andamento",
+        return reply.code(409).send({
+          error: "Só é possível confirmar um serviço em andamento",
+        });
+      }
+
+      if (!booking.providerCompletedAt) {
+        return reply.code(409).send({
+          error:
+            "O profissional ainda não informou que o serviço foi finalizado",
         });
       }
 
