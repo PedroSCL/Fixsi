@@ -4,6 +4,8 @@ import crypto from "crypto";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../plugins/authenticate";
 import {
+  AsaasApiError,
+  asaasPublicErrorMessage,
   createAsaasCustomer,
   createPixCharge,
   getPixQrCode,
@@ -51,11 +53,6 @@ export async function paymentsRoutes(app: FastifyInstance) {
       }
 
       // Não cria pagamento duplicado
-      if (booking.payment) {
-        return reply.send({ payment: booking.payment });
-      }
-
-      // Proposta aceita é obrigatória para ter o valor
       if (!booking.proposal) {
         return reply.code(400).send({
           error: "Nenhuma proposta aceita encontrada",
@@ -63,82 +60,145 @@ export async function paymentsRoutes(app: FastifyInstance) {
       }
 
       const client = booking.client;
-
-      // Cria ou recupera o cliente no Asaas
-      let asaasCustomerId = client.asaasWalletId ?? "";
-
-      if (!asaasCustomerId) {
-        const customer = await createAsaasCustomer({
-          name: client.name,
-          email: client.email,
-          cpf: client.cpf,
-          phone: client.phone,
-        });
-
-        if (!customer.id) {
-          return reply.code(500).send({
-            error: "Erro ao criar cliente no Asaas",
-          });
-        }
-
-        asaasCustomerId = customer.id;
-
-        // Salva o ID do Asaas no usuário pra não criar de novo
-        await prisma.user.update({
-          where: { id: client.id },
-          data: { asaasWalletId: customer.id },
-        });
-      }
-
-      // Cria a cobrança PIX
       const title =
         booking.service?.title || booking.tool?.title || "Serviço Serveo";
-
-      const charge = await createPixCharge({
-        customerId: asaasCustomerId,
-        amount: Number(booking.proposal.amount),
-        description: `Serveo - ${title}`,
-        externalReference: booking.id,
-      });
-
-      if (!charge.id) {
-        return reply.code(500).send({
-          error: "Erro ao criar cobrança no Asaas",
-          details: charge,
-        });
-      }
-
-      // Busca o QR Code PIX
-      const qrCode = await getPixQrCode(charge.id);
-
-      // Calcula taxa da plataforma (10%) e valor do profissional (90%)
       const amount = Number(booking.proposal.amount);
       const platformFee = Math.round(amount * 0.1 * 100) / 100;
       const providerAmount = Math.round(amount * 0.9 * 100) / 100;
 
-      // Salva o pagamento no banco
-      const payment = await prisma.payment.create({
-        data: {
-          bookingId: booking.id,
-          amount: booking.proposal.amount,
-          asaasChargeId: charge.id,
-          pixQrCode: qrCode.encodedImage,
-          pixKey: qrCode.payload,
-          platformFee,
-          providerAmount,
-          status: "PENDING",
-        },
+      const paymentResponse = (payment: {
+        id: string;
+        amount: unknown;
+        pixKey: string | null;
+        pixQrCode: string | null;
+        status: string;
+      }) => ({
+        id: payment.id,
+        amount: payment.amount,
+        pixKey: payment.pixKey,
+        pixQrCode: payment.pixQrCode,
+        status: payment.status,
       });
 
-      return reply.code(201).send({
-        payment: {
-          id: payment.id,
-          amount: payment.amount,
-          pixKey: payment.pixKey,
-          pixQrCode: payment.pixQrCode,
-          status: payment.status,
-        },
-      });
+      try {
+        // Não cria outra cobrança quando já existe um pagamento completo.
+        if (booking.payment?.pixKey && booking.payment.pixQrCode) {
+          return reply.send({ payment: paymentResponse(booking.payment) });
+        }
+
+        // Se a cobrança foi criada, mas a busca do QR Code falhou, recupera a
+        // mesma cobrança em vez de gerar uma duplicada.
+        if (booking.payment?.asaasChargeId) {
+          const qrCode = await getPixQrCode(booking.payment.asaasChargeId);
+          const recoveredPayment = await prisma.payment.update({
+            where: { id: booking.payment.id },
+            data: {
+              pixQrCode: qrCode.encodedImage,
+              pixKey: qrCode.payload,
+            },
+          });
+          return reply.send({ payment: paymentResponse(recoveredPayment) });
+        }
+
+        // Reserva o pagamento no banco antes de chamar o provedor. A relação
+        // única por booking impede duas abas de criarem cobranças concorrentes.
+        const paymentReservation =
+          booking.payment ??
+          (await prisma.payment.create({
+            data: {
+              bookingId: booking.id,
+              amount: booking.proposal.amount,
+              platformFee,
+              providerAmount,
+              status: "PENDING",
+            },
+          }));
+
+        const createCustomer = async () => {
+          const customer = await createAsaasCustomer({
+            id: client.id,
+            name: client.name,
+            email: client.email,
+            cpf: client.cpf,
+            phone: client.phone,
+          });
+
+          await prisma.user.update({
+            where: { id: client.id },
+            data: { asaasWalletId: customer.id },
+          });
+          return customer.id;
+        };
+
+        let asaasCustomerId = client.asaasWalletId || (await createCustomer());
+        let charge: Awaited<ReturnType<typeof createPixCharge>>;
+
+        try {
+          charge = await createPixCharge({
+            customerId: asaasCustomerId,
+            amount,
+            description: `Serveo - ${title}`,
+            externalReference: booking.id,
+          });
+        } catch (error) {
+          // IDs do Asaas pertencem à conta e ao ambiente em que foram criados.
+          // Uma migração pode deixar um ID antigo no banco; recriamos o cliente
+          // uma única vez quando o provedor confirma que ele não existe.
+          if (
+            client.asaasWalletId &&
+            error instanceof AsaasApiError &&
+            error.providerStatus === 404
+          ) {
+            asaasCustomerId = await createCustomer();
+            charge = await createPixCharge({
+              customerId: asaasCustomerId,
+              amount,
+              description: `Serveo - ${title}`,
+              externalReference: booking.id,
+            });
+          } else {
+            throw error;
+          }
+        }
+
+        // Persiste o ID externo antes de buscar o QR Code. Se a segunda chamada
+        // falhar, a próxima tentativa continua a cobrança já criada.
+        const paymentWithCharge = await prisma.payment.update({
+          where: { id: paymentReservation.id },
+          data: { asaasChargeId: charge.id },
+        });
+
+        const qrCode = await getPixQrCode(charge.id);
+        const payment = await prisma.payment.update({
+          where: { id: paymentWithCharge.id },
+          data: {
+            pixQrCode: qrCode.encodedImage,
+            pixKey: qrCode.payload,
+          },
+        });
+
+        return reply.code(201).send({
+          payment: paymentResponse(payment),
+        });
+      } catch (error) {
+        request.log.error(
+          {
+            err: error,
+            bookingId: booking.id,
+            provider:
+              error instanceof AsaasApiError
+                ? {
+                    status: error.providerStatus,
+                    errors: error.providerErrors,
+                  }
+                : undefined,
+          },
+          "Falha ao gerar cobrança PIX",
+        );
+        return reply.code(502).send({
+          error: asaasPublicErrorMessage(error),
+        });
+      }
     },
   );
 

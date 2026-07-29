@@ -15,8 +15,8 @@ const createBookingSchema = z
   });
 
 const createProposalSchema = z.object({
-  amount: z.number().positive(),
-  description: z.string().optional(),
+  amount: z.number().positive().max(1_000_000),
+  description: z.string().trim().max(240).optional(),
   expiresAt: z.string().optional(),
 });
 
@@ -219,6 +219,12 @@ export async function bookingsRoutes(app: FastifyInstance) {
         return reply.code(400).send({ error: "Conversa não encontrada" });
       }
 
+      if (booking.status !== "PENDING") {
+        return reply.code(409).send({
+          error: "Este pedido não está mais recebendo propostas",
+        });
+      }
+
       const proposal = await prisma.proposal.create({
         data: {
           amount: body.amount,
@@ -265,6 +271,16 @@ export async function bookingsRoutes(app: FastifyInstance) {
 
       if (!proposal) {
         return reply.code(404).send({ error: "Proposta não encontrada" });
+      }
+
+      if (
+        proposal.status === "ACCEPTED" &&
+        proposal.bookingId === id &&
+        booking.status === "AWAITING_PAYMENT"
+      ) {
+        return reply.send({
+          message: "Proposta já aceita. Realize o pagamento para confirmar.",
+        });
       }
 
       if (proposal.status !== "PENDING") {

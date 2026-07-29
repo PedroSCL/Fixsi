@@ -2,7 +2,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MessageCircle, Send } from "lucide-react";
+import {
+  ArrowLeft,
+  BadgeDollarSign,
+  Check,
+  MessageCircle,
+  Send,
+  X,
+} from "lucide-react";
 import { api, apiErrorMessage } from "../../lib/api";
 interface Message {
   id: string;
@@ -15,11 +22,18 @@ interface Conversation {
   booking: {
     id: string;
     status: string;
-    service?: { title: string };
-    tool?: { title: string };
+    clientId: string;
+    service?: { title: string; userId: string };
+    tool?: { title: string; userId: string };
   };
   messages: Message[];
-  proposals: { id: string; amount: number; status: string; senderId: string }[];
+  proposals: {
+    id: string;
+    amount: number;
+    description?: string;
+    status: string;
+    senderId: string;
+  }[];
 }
 interface Booking {
   id: string;
@@ -34,6 +48,13 @@ export default function MessagesPage() {
     [selected, setSelected] = useState<Conversation | null>(null),
     [message, setMessage] = useState(""),
     [sending, setSending] = useState(false),
+    [proposalOpen, setProposalOpen] = useState(false),
+    [proposalAmount, setProposalAmount] = useState(""),
+    [proposalDescription, setProposalDescription] = useState(""),
+    [proposalSending, setProposalSending] = useState(false),
+    [proposalError, setProposalError] = useState(""),
+    [proposalSuccess, setProposalSuccess] = useState(""),
+    [acceptingProposalId, setAcceptingProposalId] = useState(""),
     [userId, setUserId] = useState(""),
     [loading, setLoading] = useState(true);
   const end = useRef<HTMLDivElement>(null);
@@ -61,6 +82,11 @@ export default function MessagesPage() {
   async function open(id: string) {
     try {
       setSelected((await api.get(`/conversations/${id}`)).data.conversation);
+      setProposalOpen(false);
+      setProposalAmount("");
+      setProposalDescription("");
+      setProposalError("");
+      setProposalSuccess("");
     } catch (err) {
       console.error(err);
     }
@@ -83,28 +109,95 @@ export default function MessagesPage() {
       setSending(false);
     }
   }
-  async function proposal(amount: number) {
+  async function proposal(event: React.FormEvent) {
+    event.preventDefault();
     if (!selected) return;
+
+    const amount = Number(proposalAmount.replace(",", "."));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setProposalError("Informe um valor maior que zero.");
+      return;
+    }
+
+    setProposalSending(true);
+    setProposalError("");
+    setProposalSuccess("");
     try {
-      await api.post(`/bookings/${selected.booking.id}/proposals`, {
-        amount,
-        description: "Proposta de orçamento",
-      });
-      await open(selected.id);
+      const { data } = await api.post(
+        `/bookings/${selected.booking.id}/proposals`,
+        {
+          amount,
+          description:
+            proposalDescription.trim() || "Proposta de orçamento",
+        },
+      );
+
+      setSelected((current) =>
+        current
+          ? { ...current, proposals: [data.proposal, ...current.proposals] }
+          : current,
+      );
+      setProposalAmount("");
+      setProposalDescription("");
+      setProposalOpen(false);
+      setProposalSuccess("Proposta enviada com sucesso.");
     } catch (err: unknown) {
-      alert(apiErrorMessage(err, "Não foi possível enviar a proposta"));
+      setProposalError(
+        apiErrorMessage(err, "Não foi possível enviar a proposta."),
+      );
+    } finally {
+      setProposalSending(false);
     }
   }
+
   async function accept(id: string) {
     if (!selected) return;
+
+    setAcceptingProposalId(id);
+    setProposalError("");
+    setProposalSuccess("");
     try {
       await api.patch(
         `/bookings/${selected.booking.id}/proposals/${id}/accept`,
       );
-      await open(selected.id);
-      await load();
+
+      setSelected((current) =>
+        current
+          ? {
+              ...current,
+              booking: { ...current.booking, status: "AWAITING_PAYMENT" },
+              proposals: current.proposals.map((item) => ({
+                ...item,
+                status:
+                  item.id === id
+                    ? "ACCEPTED"
+                    : item.status === "PENDING"
+                      ? "REJECTED"
+                      : item.status,
+              })),
+            }
+          : current,
+      );
+      setBookings((current) =>
+        current.map((booking) =>
+          booking.id === selected.booking.id
+            ? { ...booking, status: "AWAITING_PAYMENT" }
+            : booking,
+        ),
+      );
+      setProposalSuccess(
+        "Proposta aceita. O pedido está pronto para o pagamento.",
+      );
+
+      // A mutação já foi concluída. Uma eventual falha de sincronização não
+      // deve ser apresentada como falha ao aceitar a proposta.
+      void load();
     } catch (err: unknown) {
-      alert(apiErrorMessage(err, "Não foi possível aceitar a proposta"));
+      setProposalError(
+        apiErrorMessage(err, "Não foi possível aceitar a proposta."),
+      );
+    } finally {
+      setAcceptingProposalId("");
     }
   }
   const title = (b: Booking) => b.service?.title || b.tool?.title || "Conversa";
@@ -117,6 +210,9 @@ export default function MessagesPage() {
       COMPLETED: "Concluído",
       CANCELLED: "Cancelado",
     })[value] || value;
+  const isProvider =
+    selected?.booking.service?.userId === userId ||
+    selected?.booking.tool?.userId === userId;
   if (loading)
     return (
       <div className="flex min-h-96 items-center justify-center text-[#667085]">
@@ -223,9 +319,12 @@ export default function MessagesPage() {
                     {p.senderId !== userId && (
                       <button
                         onClick={() => accept(p.id)}
+                        disabled={Boolean(acceptingProposalId)}
                         className="rounded-lg bg-[#F97316] px-3 py-1.5 text-xs font-extrabold text-white"
                       >
-                        Aceitar
+                        {acceptingProposalId === p.id
+                          ? "Aceitando..."
+                          : "Aceitar"}
                       </button>
                     )}
                   </div>
@@ -264,6 +363,93 @@ export default function MessagesPage() {
               <div ref={end} />
             </div>
             <footer className="border-t border-[#E7E2DA] bg-white p-4">
+              {(proposalError || proposalSuccess) && (
+                <div
+                  role={proposalError ? "alert" : "status"}
+                  className={`mb-3 flex items-start gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold ${
+                    proposalError
+                      ? "bg-[#FEF0EE] text-[#B42318]"
+                      : "bg-[#ECFDF3] text-[#027A48]"
+                  }`}
+                >
+                  {proposalError ? (
+                    <X className="mt-0.5 shrink-0" size={16} />
+                  ) : (
+                    <Check className="mt-0.5 shrink-0" size={16} />
+                  )}
+                  <span>{proposalError || proposalSuccess}</span>
+                </div>
+              )}
+              {proposalOpen && isProvider && (
+                <form
+                  onSubmit={proposal}
+                  className="mb-3 rounded-2xl border border-[#F4C99F] bg-[#FFF9F3] p-4"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="flex items-center gap-2 text-sm font-extrabold text-[#17233B]">
+                        <BadgeDollarSign size={18} className="text-[#F97316]" />
+                        Nova proposta
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-[#667085]">
+                        Informe o valor combinado com o cliente.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProposalOpen(false);
+                        setProposalError("");
+                      }}
+                      className="rounded-lg p-1.5 text-[#667085] hover:bg-white hover:text-[#17233B]"
+                      aria-label="Fechar proposta"
+                    >
+                      <X size={17} />
+                    </button>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-[180px_1fr]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-xs font-bold text-[#344054]">
+                        Valor
+                      </span>
+                      <div className="field flex items-center gap-2 focus-within:border-[#F97316] focus-within:ring-2 focus-within:ring-[#F97316]/15">
+                        <span className="font-bold text-[#667085]">R$</span>
+                        <input
+                          value={proposalAmount}
+                          onChange={(event) =>
+                            setProposalAmount(event.target.value)
+                          }
+                          inputMode="decimal"
+                          placeholder="0,00"
+                          className="min-w-0 flex-1 bg-transparent outline-none"
+                          autoFocus
+                        />
+                      </div>
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 block text-xs font-bold text-[#344054]">
+                        Detalhes (opcional)
+                      </span>
+                      <input
+                        value={proposalDescription}
+                        onChange={(event) =>
+                          setProposalDescription(event.target.value)
+                        }
+                        maxLength={240}
+                        placeholder="Ex.: material incluso e prazo de 2 dias"
+                        className="field w-full"
+                      />
+                    </label>
+                  </div>
+                  <button
+                    disabled={proposalSending || !proposalAmount.trim()}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#F97316] px-4 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-[#E8660C] disabled:cursor-not-allowed disabled:opacity-55 sm:ml-auto sm:w-auto"
+                  >
+                    <Send size={16} />
+                    {proposalSending ? "Enviando..." : "Enviar proposta"}
+                  </button>
+                </form>
+              )}
               <form onSubmit={send} className="flex gap-2">
                 <input
                   value={message}
@@ -279,14 +465,18 @@ export default function MessagesPage() {
                   <Send size={18} />
                 </button>
               </form>
-              {selected.booking.status === "PENDING" && (
+              {selected.booking.status === "PENDING" &&
+                isProvider &&
+                !proposalOpen && (
                 <button
                   onClick={() => {
-                    const value = prompt("Valor da proposta (R$):");
-                    if (value && !isNaN(Number(value))) proposal(Number(value));
+                    setProposalOpen(true);
+                    setProposalError("");
+                    setProposalSuccess("");
                   }}
-                  className="mt-3 w-full rounded-xl border border-[#EFB67D] py-2.5 text-sm font-extrabold text-[#F97316] hover:bg-[#FFF1E8]"
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#EFB67D] py-2.5 text-sm font-extrabold text-[#F97316] hover:bg-[#FFF1E8]"
                 >
+                  <BadgeDollarSign size={18} />
                   Enviar proposta de orçamento
                 </button>
               )}
