@@ -17,6 +17,14 @@ const checkoutSchema = z.object({
 });
 
 export async function paymentsRoutes(app: FastifyInstance) {
+  app.get(
+    "/environment",
+    { preHandler: [authenticate] },
+    async (_request, reply) => {
+      return reply.send({ environment: getEnvironment().ASAAS_ENV });
+    },
+  );
+
   // Criar cobrança PIX para um booking
   app.post(
     "/checkout",
@@ -83,7 +91,10 @@ export async function paymentsRoutes(app: FastifyInstance) {
       try {
         // Não cria outra cobrança quando já existe um pagamento completo.
         if (booking.payment?.pixKey && booking.payment.pixQrCode) {
-          return reply.send({ payment: paymentResponse(booking.payment) });
+          return reply.send({
+            payment: paymentResponse(booking.payment),
+            environment: getEnvironment().ASAAS_ENV,
+          });
         }
 
         // Se a cobrança foi criada, mas a busca do QR Code falhou, recupera a
@@ -97,7 +108,10 @@ export async function paymentsRoutes(app: FastifyInstance) {
               pixKey: qrCode.payload,
             },
           });
-          return reply.send({ payment: paymentResponse(recoveredPayment) });
+          return reply.send({
+            payment: paymentResponse(recoveredPayment),
+            environment: getEnvironment().ASAAS_ENV,
+          });
         }
 
         // Reserva o pagamento no banco antes de chamar o provedor. A relação
@@ -179,6 +193,7 @@ export async function paymentsRoutes(app: FastifyInstance) {
 
         return reply.code(201).send({
           payment: paymentResponse(payment),
+          environment: getEnvironment().ASAAS_ENV,
         });
       } catch (error) {
         request.log.error(

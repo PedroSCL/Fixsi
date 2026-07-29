@@ -1,11 +1,18 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- o QR Code é uma imagem base64 retornada pelo provedor de pagamentos */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import axios from "axios";
-import { ArrowLeft, Check, Copy, LockKeyhole, QrCode } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  FlaskConical,
+  LockKeyhole,
+  QrCode,
+} from "lucide-react";
 import { api } from "../../../../lib/api";
 
 interface Payment {
@@ -22,7 +29,21 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [environment, setEnvironment] = useState<
+    "sandbox" | "production" | null
+  >(null);
   const needsCpfCorrection = /cpf|cnpj/i.test(error);
+  const isSandbox = environment === "sandbox";
+
+  useEffect(() => {
+    api
+      .get("/payments/environment")
+      .then(({ data }) => setEnvironment(data.environment))
+      .catch(() => {
+        // O checkout continuará exibindo erros normalmente caso a consulta
+        // informativa do ambiente não esteja disponível.
+      });
+  }, []);
 
   async function createPayment() {
     setLoading(true);
@@ -30,6 +51,7 @@ export default function PaymentPage() {
     try {
       const { data } = await api.post("/payments/checkout", { bookingId: id });
       setPayment(data.payment);
+      setEnvironment(data.environment);
     } catch (caught) {
       setError(
         axios.isAxiosError(caught)
@@ -69,6 +91,29 @@ export default function PaymentPage() {
           a Serveo confirma o pagamento automaticamente.
         </p>
 
+        {isSandbox && (
+          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+            <FlaskConical className="mt-0.5 shrink-0" size={19} />
+            <div>
+              <p className="font-extrabold">Ambiente de teste do Asaas</p>
+              <p className="mt-1 leading-6">
+                Este PIX não movimenta dinheiro e não deve ser pago pelo
+                aplicativo do seu banco. Para simular o pagamento, abra a
+                cobrança no painel Sandbox do Asaas e use a opção de confirmar
+                pagamento.
+              </p>
+              <a
+                href="https://sandbox.asaas.com/"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-flex font-extrabold text-amber-900 underline underline-offset-2"
+              >
+                Abrir painel Sandbox do Asaas
+              </a>
+            </div>
+          </div>
+        )}
+
         {!payment ? (
           <div className="mt-8 rounded-2xl border border-[#E7E2DA] bg-[#FCFBF9] p-6">
             <div className="flex items-start gap-3 text-sm text-[#475467]">
@@ -102,7 +147,11 @@ export default function PaymentPage() {
               disabled={loading}
               className="btn-primary mt-6 w-full"
             >
-              {loading ? "Gerando PIX..." : "Gerar QR Code PIX"}
+              {loading
+                ? "Gerando PIX..."
+                : isSandbox
+                  ? "Gerar QR Code de teste"
+                  : "Gerar QR Code PIX"}
             </button>
           </div>
         ) : (
@@ -141,7 +190,9 @@ export default function PaymentPage() {
                 {copied ? "Código copiado" : "Copiar código PIX"}
               </button>
               <p className="mt-4 text-xs leading-5 text-[#667085]">
-                Após o pagamento, a atualização pode levar alguns instantes.
+                {isSandbox
+                  ? "Após confirmar a cobrança no painel Sandbox, a atualização pode levar alguns instantes."
+                  : "Após o pagamento, a atualização pode levar alguns instantes."}
               </p>
             </div>
           </div>
