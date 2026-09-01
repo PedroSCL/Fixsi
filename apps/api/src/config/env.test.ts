@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { parseEnvironment } from "./env";
 
-const databaseUrl = "postgresql://user:password@localhost:5432/serveo";
+const databaseUrl = "postgresql://user:password@localhost:5432/fixsi";
 
 describe("parseEnvironment", () => {
   it("aplica padrões seguros para desenvolvimento", () => {
@@ -11,7 +11,6 @@ describe("parseEnvironment", () => {
     assert.equal(environment.NODE_ENV, "development");
     assert.equal(environment.PORT, 3001);
     assert.equal(environment.FRONTEND_URL, "http://localhost:3000");
-    assert.equal(environment.ASAAS_ENV, "sandbox");
   });
 
   it("converte a porta informada como texto", () => {
@@ -34,14 +33,14 @@ describe("parseEnvironment", () => {
     );
   });
 
-  it("exige segredos e credenciais financeiras em produção", () => {
+  it("exige o segredo de autenticação em produção", () => {
     assert.throws(
       () =>
         parseEnvironment({
           NODE_ENV: "production",
           DATABASE_URL: databaseUrl,
         }),
-      /JWT_SECRET.*ASAAS_API_KEY.*ASAAS_WEBHOOK_TOKEN/,
+      /JWT_SECRET/,
     );
   });
 
@@ -50,13 +49,9 @@ describe("parseEnvironment", () => {
       NODE_ENV: "production",
       DATABASE_URL: databaseUrl,
       JWT_SECRET: "a".repeat(32),
-      ASAAS_ENV: "production",
-      ASAAS_API_KEY: "asaas-key",
-      ASAAS_WEBHOOK_TOKEN: "webhook-token-with-32-characters",
-      FRONTEND_URL: "https://serveo.example.com",
+      FRONTEND_URL: "https://fixsi.example.com",
     });
 
     assert.equal(environment.NODE_ENV, "production");
-    assert.equal(environment.ASAAS_ENV, "production");
   });
 });

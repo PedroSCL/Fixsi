@@ -2,20 +2,20 @@
 @import "tailwindcss";
 
 :root {
-  --serveo-primary: #f97316;
-  --serveo-primary-hover: #ea580c;
-  --serveo-primary-soft: #fff1e8;
-  --serveo-secondary: #274060;
-  --serveo-accent: #ffb15a;
-  --serveo-bg: #f8f7f4;
-  --serveo-surface: #ffffff;
-  --serveo-text: #17233b;
-  --serveo-muted: #667085;
-  --serveo-border: #e7e2da;
-  --serveo-success: #15803d;
-  --serveo-warning: #b45309;
-  --serveo-danger: #dc2626;
-  --serveo-shadow: 0 16px 45px rgba(23, 35, 59, 0.09);
+  --fixsi-primary: #f97316;
+  --fixsi-primary-hover: #ea580c;
+  --fixsi-primary-soft: #fff1e8;
+  --fixsi-secondary: #274060;
+  --fixsi-accent: #ffb15a;
+  --fixsi-bg: #f8f7f4;
+  --fixsi-surface: #ffffff;
+  --fixsi-text: #17233b;
+  --fixsi-muted: #667085;
+  --fixsi-border: #e7e2da;
+  --fixsi-success: #15803d;
+  --fixsi-warning: #b45309;
+  --fixsi-danger: #dc2626;
+  --fixsi-shadow: 0 16px 45px rgba(23, 35, 59, 0.09);
 }
 
 * {
@@ -26,8 +26,8 @@ html {
 }
 body {
   min-height: 100vh;
-  color: var(--serveo-text);
-  background: var(--serveo-bg);
+  color: var(--fixsi-text);
+  background: var(--fixsi-bg);
   font-family: "Manrope", Arial, sans-serif;
   text-rendering: optimizeLegibility;
 }
@@ -56,13 +56,13 @@ select:focus-visible {
   margin-inline: auto;
 }
 .surface-card {
-  border: 1px solid var(--serveo-border);
+  border: 1px solid var(--fixsi-border);
   border-radius: 1.25rem;
-  background: var(--serveo-surface);
+  background: var(--fixsi-surface);
   box-shadow: 0 8px 28px rgba(23, 35, 59, 0.06);
 }
 .eyebrow {
-  color: var(--serveo-primary);
+  color: var(--fixsi-primary);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -75,14 +75,14 @@ select:focus-visible {
   gap: 0.5rem;
   min-height: 2.75rem;
   border-radius: 0.8rem;
-  background: var(--serveo-primary);
+  background: var(--fixsi-primary);
   padding: 0.7rem 1.15rem;
   color: white;
   font-weight: 800;
   box-shadow: 0 8px 20px rgba(249, 115, 22, 0.2);
 }
 .btn-primary:hover {
-  background: var(--serveo-primary-hover);
+  background: var(--fixsi-primary-hover);
   transform: translateY(-1px);
 }
 .btn-secondary {
@@ -91,24 +91,24 @@ select:focus-visible {
   justify-content: center;
   gap: 0.5rem;
   min-height: 2.75rem;
-  border: 1px solid var(--serveo-border);
+  border: 1px solid var(--fixsi-border);
   border-radius: 0.8rem;
   background: white;
   padding: 0.7rem 1.15rem;
-  color: var(--serveo-text);
+  color: var(--fixsi-text);
   font-weight: 800;
 }
 .btn-secondary:hover {
   border-color: #efb67d;
-  background: var(--serveo-primary-soft);
+  background: var(--fixsi-primary-soft);
 }
 .field {
   width: 100%;
-  border: 1px solid var(--serveo-border);
+  border: 1px solid var(--fixsi-border);
   border-radius: 0.8rem;
   background: #fcfbf9;
   padding: 0.78rem 1rem;
-  color: var(--serveo-text);
+  color: var(--fixsi-text);
   font-weight: 600;
   outline: none;
 }
@@ -124,7 +124,7 @@ select:focus-visible {
   font-weight: 500;
 }
 .field:focus {
-  border-color: var(--serveo-primary);
+  border-color: var(--fixsi-primary);
   background: white;
   box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
 }

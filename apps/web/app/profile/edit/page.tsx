@@ -187,7 +187,7 @@ export default function EditProfilePage() {
                   {!cpfIsValid && <ShieldAlert size={15} />}
                   {cpfIsValid
                     ? "Documento validado."
-                    : "O CPF atual é inválido e precisa ser corrigido para realizar pagamentos."}
+                    : "O CPF atual é inválido e precisa ser corrigido."}
                 </p>
               </div>
               {cpfIsValid && (
@@ -252,8 +252,6 @@ export default function EditProfilePage() {
                 </Field>
                 <p className="text-xs leading-5 text-[#667085] sm:col-span-2">
                   Por segurança, o CPF só é alterado após validar sua senha.
-                  Depois da correção, o cadastro de pagamento será sincronizado
-                  novamente com o Asaas.
                 </p>
               </div>
             )}

@@ -9,8 +9,8 @@ import {
   serializeRefreshToken,
 } from "./session-token";
 
-export const ACCESS_COOKIE = "serveo_access";
-export const REFRESH_COOKIE = "serveo_refresh";
+export const ACCESS_COOKIE = "fixsi_access";
+export const REFRESH_COOKIE = "fixsi_refresh";
 
 const ACCESS_TTL_SECONDS = 15 * 60;
 const REFRESH_TTL_SECONDS = 30 * 24 * 60 * 60;

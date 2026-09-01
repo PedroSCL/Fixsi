@@ -18,8 +18,8 @@ export function clearLegacyAuthStorage() {
 
 export function notifyAuthChanged() {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new Event("serveo:auth-changed"));
-  localStorage.setItem("serveo_auth_event", Date.now().toString());
+  window.dispatchEvent(new Event("fixsi:auth-changed"));
+  localStorage.setItem("fixsi_auth_event", Date.now().toString());
 }
 
 export function apiErrorMessage(error: unknown, fallback: string) {
@@ -33,7 +33,7 @@ export function isUnauthorized(error: unknown) {
 }
 
 type RetryableRequest = InternalAxiosRequestConfig & {
-  _serveoRetried?: boolean;
+  _fixsiRetried?: boolean;
 };
 
 let refreshRequest: Promise<void> | null = null;
@@ -55,13 +55,13 @@ api.interceptors.response.use(
 
     if (
       error.response?.status !== 401 ||
-      request._serveoRetried ||
+      request._fixsiRetried ||
       isAuthenticationRequest
     ) {
       return Promise.reject(error);
     }
 
-    request._serveoRetried = true;
+    request._fixsiRetried = true;
 
     try {
       refreshRequest ??= api

@@ -9,9 +9,6 @@ const environmentSchema = z
     DATABASE_URL: z.string().trim().min(1, "DATABASE_URL é obrigatória"),
     FRONTEND_URL: z.string().url().default("http://localhost:3000"),
     JWT_SECRET: z.string().min(32).optional(),
-    ASAAS_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
-    ASAAS_API_KEY: z.string().trim().min(1).optional(),
-    ASAAS_WEBHOOK_TOKEN: z.string().trim().min(16).optional(),
   })
   .superRefine((values, context) => {
     if (values.NODE_ENV !== "production") return;
@@ -21,22 +18,6 @@ const environmentSchema = z
         code: "custom",
         path: ["JWT_SECRET"],
         message: "JWT_SECRET é obrigatória em produção",
-      });
-    }
-
-    if (!values.ASAAS_API_KEY) {
-      context.addIssue({
-        code: "custom",
-        path: ["ASAAS_API_KEY"],
-        message: "ASAAS_API_KEY é obrigatória em produção",
-      });
-    }
-
-    if (!values.ASAAS_WEBHOOK_TOKEN) {
-      context.addIssue({
-        code: "custom",
-        path: ["ASAAS_WEBHOOK_TOKEN"],
-        message: "ASAAS_WEBHOOK_TOKEN é obrigatório em produção",
       });
     }
   });

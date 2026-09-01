@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   MessageCircle,
   Package,
-  QrCode,
   Star,
 } from "lucide-react";
 import { api, apiErrorMessage } from "../../lib/api";
@@ -29,11 +28,6 @@ const STATUS: Record<string, { label: string; classes: string }> = {
     classes: "bg-amber-50 text-amber-800",
   },
   CONFIRMED: { label: "Confirmado", classes: "bg-blue-50 text-blue-700" },
-  AWAITING_PAYMENT: {
-    label: "Aguardando pagamento",
-    classes: "bg-amber-50 text-amber-800",
-  },
-  PAID: { label: "Pago", classes: "bg-emerald-50 text-emerald-700" },
   IN_PROGRESS: { label: "Em andamento", classes: "bg-blue-50 text-blue-700" },
   COMPLETED: { label: "Concluído", classes: "bg-emerald-50 text-emerald-700" },
   CANCELLED: { label: "Cancelado", classes: "bg-red-50 text-red-700" },
@@ -231,14 +225,6 @@ export default function BookingsPage() {
                         Serviço em andamento
                       </span>
                     )}
-                  {b.status === "AWAITING_PAYMENT" && isClient && (
-                    <Link
-                      href={`/dashboard/bookings/${b.id}/payment`}
-                      className="btn-primary min-h-10 px-4 py-2 text-sm"
-                    >
-                      <QrCode size={16} /> Pagar com PIX
-                    </Link>
-                  )}
                   {b.status === "COMPLETED" && (
                     <Link
                       href={`/dashboard/bookings/${b.id}/review`}

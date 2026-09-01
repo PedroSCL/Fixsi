@@ -131,7 +131,6 @@ export async function bookingsRoutes(app: FastifyInstance) {
         },
         conversation: { select: { id: true } },
         proposal: true,
-        payment: { select: { status: true, amount: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -177,7 +176,6 @@ export async function bookingsRoutes(app: FastifyInstance) {
             },
           },
         },
-        payment: true,
       },
     });
 
@@ -284,10 +282,10 @@ export async function bookingsRoutes(app: FastifyInstance) {
       if (
         proposal.status === "ACCEPTED" &&
         proposal.bookingId === id &&
-        booking.status === "AWAITING_PAYMENT"
+        booking.status === "IN_PROGRESS"
       ) {
         return reply.send({
-          message: "Proposta já aceita. Realize o pagamento para confirmar.",
+          message: "Proposta já aceita. O serviço está em andamento.",
         });
       }
 
@@ -314,15 +312,15 @@ export async function bookingsRoutes(app: FastifyInstance) {
           data: { status: "REJECTED" },
         });
 
-        // Booking avança para aguardando pagamento
+        // Sem o módulo financeiro, o aceite confirma o início do serviço.
         await tx.booking.update({
           where: { id },
-          data: { status: "AWAITING_PAYMENT" },
+          data: { status: "IN_PROGRESS" },
         });
       });
 
       return reply.send({
-        message: "Proposta aceita. Realize o pagamento para confirmar.",
+        message: "Proposta aceita. O serviço está em andamento.",
       });
     },
   );
@@ -386,10 +384,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
       const { id } = request.params as { id: string };
       const userId = (request.user as { id: string }).id;
 
-      const booking = await prisma.booking.findUnique({
-        where: { id },
-        include: { payment: true },
-      });
+      const booking = await prisma.booking.findUnique({ where: { id } });
 
       if (!booking) {
         return reply.code(404).send({ error: "Booking não encontrado" });

@@ -115,7 +115,7 @@ export default function ProfilePage() {
             <Info icon={Phone} label="Telefone" value={profile.phone} />
             <Info
               icon={CalendarDays}
-              label="Na Serveo desde"
+              label="Na Fixsi desde"
               value={new Date(profile.createdAt).toLocaleDateString("pt-BR", {
                 month: "long",
                 year: "numeric",

@@ -126,7 +126,7 @@ export default function ToolDetailPage() {
               </span>
             </div>
             <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#FFF1E8] p-3 text-sm font-bold text-[#F97316]">
-              <ShieldCheck size={18} /> Negocie dentro da Serveo
+              <ShieldCheck size={18} /> Negocie dentro da Fixsi
             </div>
           </section>
           <section className="surface-card p-6">

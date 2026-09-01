@@ -94,25 +94,46 @@ export default function Home() {
               </span>
             </div>
           </div>
-          <figure className="relative mx-auto w-full max-w-lg py-6">
-            <span className="absolute right-2 top-0 h-48 w-48 rounded-full bg-[#FFE2C2]" />
-            <span className="absolute bottom-16 left-2 h-24 w-24 rounded-full border-[18px] border-[#17233B]" />
+          <aside className="relative mx-auto w-full max-w-lg overflow-hidden rounded-[2rem] bg-[#F97316] p-7 shadow-[0_24px_65px_rgba(249,115,22,.24)] sm:p-10">
             <img
-              src="/img/ferramentas.png"
-              alt="Furadeira, chave e martelo representando serviços para casa"
-              className="relative mx-auto w-full max-w-[460px] mix-blend-multiply"
+              src="/img/tools-illustration.png"
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover opacity-[.13] mix-blend-multiply"
             />
-            <figcaption className="relative mx-auto mt-3 grid max-w-[460px] grid-cols-3 border-y border-[#D9D4CC] py-4 text-center">
-              {["Manutenção", "Reformas", "Ferramentas"].map((item, index) => (
-                <span
-                  key={item}
-                  className={`text-xs font-extrabold uppercase tracking-[.08em] text-[#475467] ${index > 0 ? "border-l border-[#D9D4CC]" : ""}`}
+            <div className="relative flex h-16 w-36 items-center justify-center rounded-xl bg-white shadow-sm">
+              <img
+                src="/img/logofixsi-horizontal-tight.png"
+                alt="Fixsi"
+                className="h-11 w-auto object-contain"
+              />
+            </div>
+            <p className="relative mt-10 text-xs font-extrabold uppercase tracking-[.2em] text-white/85">
+              Comece por aqui
+            </p>
+            <h2 className="relative mt-3 max-w-sm text-3xl font-extrabold leading-tight tracking-[-.035em] text-white">
+              Qual serviço você está procurando?
+            </h2>
+            <Link
+              href="/services"
+              className="relative mt-7 flex items-center justify-between rounded-2xl bg-white p-4 font-bold text-[#475467] shadow-lg"
+            >
+              <span className="flex items-center gap-3">
+                <Search size={20} className="text-[#F97316]" /> Buscar profissional
+              </span>
+              <ArrowRight size={18} className="text-[#17233B]" />
+            </Link>
+            <div className="relative mt-7 grid grid-cols-3 gap-3">
+              {["Elétrica", "Limpeza", "Reformas"].map((category) => (
+                <Link
+                  key={category}
+                  href={`/services?category=${encodeURIComponent(category)}`}
+                  className="rounded-xl bg-white/20 p-3 text-center text-xs font-extrabold text-white ring-1 ring-white/20 hover:bg-white hover:text-[#F97316]"
                 >
-                  {item}
-                </span>
+                  {category}
+                </Link>
               ))}
-            </figcaption>
-          </figure>
+            </div>
+          </aside>
         </div>
       </section>
 
@@ -184,7 +205,7 @@ export default function Home() {
                 icon: Handshake,
                 n: "03",
                 title: "Contrate",
-                text: "Agende, acompanhe o pagamento e avalie ao final.",
+                text: "Agende, acompanhe o serviço e avalie ao final.",
               },
             ].map(({ icon: Icon, n, title, text }) => (
               <article key={n} className="surface-card relative p-7">
@@ -280,7 +301,7 @@ export default function Home() {
 
       <footer className="bg-[#111827] py-8 text-[#B8CBC8]">
         <div className="page-shell flex flex-col justify-between gap-3 text-sm sm:flex-row">
-          <p>© {new Date().getFullYear()} Serveo. Serviços com confiança.</p>
+          <p>© {new Date().getFullYear()} Fixsi. Serviços com confiança.</p>
           <p>Feito para aproximar clientes e profissionais.</p>
         </div>
       </footer>

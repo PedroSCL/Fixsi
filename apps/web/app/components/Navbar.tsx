@@ -21,10 +21,10 @@ export function Navbar() {
     }
     syncSession();
     setOpen(false);
-    window.addEventListener("serveo:auth-changed", syncSession);
+    window.addEventListener("fixsi:auth-changed", syncSession);
     window.addEventListener("storage", syncSession);
     return () => {
-      window.removeEventListener("serveo:auth-changed", syncSession);
+      window.removeEventListener("fixsi:auth-changed", syncSession);
       window.removeEventListener("storage", syncSession);
     };
   }, [pathname]);
@@ -45,7 +45,7 @@ export function Navbar() {
         href="/services"
         className="font-bold text-[#475467] hover:text-[#F97316]"
       >
-        Profissionais
+        Serviços
       </Link>
       <Link
         href="/tools"
@@ -57,7 +57,7 @@ export function Navbar() {
   );
   return (
     <header className="sticky top-0 z-40 border-b border-[#E7E2DA] bg-white/95 backdrop-blur-lg">
-      <div className="page-shell flex h-[72px] items-center gap-5">
+      <div className="page-shell flex h-20 items-center gap-5">
         <Link href="/" aria-label="Página inicial">
           <Brand />
         </Link>

@@ -14,7 +14,6 @@ import { adminRoutes } from "./routes/admin";
 import { conversationsRoutes } from "./routes/conversations";
 import { setupSocket } from "./lib/socket";
 import { reviewsRoutes } from "./routes/reviews";
-import { paymentsRoutes } from "./routes/payments";
 import { getEnvironment } from "./config/env";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "./lib/session";
 
@@ -86,12 +85,9 @@ async function main() {
     const usesSessionCookie = Boolean(
       request.cookies[ACCESS_COOKIE] || request.cookies[REFRESH_COOKIE],
     );
-    const isPaymentWebhook = request.url.startsWith("/payments/webhook");
-
     if (
       usesSessionCookie &&
       unsafeMethods.has(request.method) &&
-      !isPaymentWebhook &&
       request.headers.origin !== allowedOrigin
     ) {
       return reply.code(403).send({ error: "Origem da requisição inválida" });
@@ -105,7 +101,6 @@ async function main() {
   await app.register(adminRoutes, { prefix: "/admin" });
   await app.register(conversationsRoutes, { prefix: "/conversations" });
   await app.register(reviewsRoutes, { prefix: "/reviews" });
-  await app.register(paymentsRoutes, { prefix: "/payments" });
 
   app.get("/health", async () => ({ status: "ok" }));
 

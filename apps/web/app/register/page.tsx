@@ -87,7 +87,7 @@ export default function RegisterPage() {
           </Link>
           <div className="mt-7 flex items-end justify-between gap-5">
             <div>
-              <p className="eyebrow">Comece na Serveo</p>
+              <p className="eyebrow">Comece na Fixsi</p>
               <h1 className="mt-2 text-3xl font-extrabold tracking-[-.035em] text-[#17233B]">
                 Crie sua conta
               </h1>
@@ -145,7 +145,7 @@ export default function RegisterPage() {
               </div>
               <div>
                 <p className="text-sm font-extrabold text-[#17233B]">
-                  Como você quer usar a Serveo?
+                  Como você quer usar a Fixsi?
                 </p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-3">
                   {roles.map(({ value, label, text, icon: Icon }) => (

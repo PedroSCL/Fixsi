@@ -100,7 +100,7 @@ export default function DashboardPage() {
         <h1 className="mt-2 text-3xl font-extrabold tracking-[-.035em] text-[#17233B]">
           Olá, {user.name.split(" ")[0]}
         </h1>
-        <p className="mt-2 text-[#667085]">Gerencie sua atividade na Serveo.</p>
+        <p className="mt-2 text-[#667085]">Gerencie sua atividade na Fixsi.</p>
       </header>
       <div className="mt-8 grid gap-6 lg:grid-cols-[260px_1fr]">
         <aside className="surface-card p-6">

@@ -218,7 +218,7 @@ export default function ServiceDetailPage() {
               </div>
             </div>
             <div className="mt-5 flex items-center gap-2 rounded-xl bg-[#FFF1E8] p-3 text-sm font-bold text-[#F97316]">
-              <ShieldCheck size={18} /> Contrate e converse pela Serveo
+              <ShieldCheck size={18} /> Contrate e converse pela Fixsi
             </div>
           </section>
           <section className="surface-card p-6">

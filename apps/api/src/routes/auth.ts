@@ -294,8 +294,6 @@ export async function authRoutes(app: FastifyInstance) {
           ...(cpfChanged
             ? {
                 cpf: body.cpf,
-                // O cliente do Asaas precisa ser recriado com o novo documento.
-                asaasWalletId: null,
               }
             : {}),
         },

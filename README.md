@@ -1,181 +1,115 @@
-# Serveo
+# Fixsi
 
-**Encontre profissionais. Contrate com confiança.**
+Plataforma web acadêmica para aproximar clientes, prestadores de serviços e locadores de ferramentas. A aplicação permite descobrir profissionais, publicar serviços e equipamentos, conversar, negociar propostas, agendar atendimentos e avaliar a experiência.
 
-A Serveo é uma plataforma em português para contratar serviços, alugar ferramentas, negociar propostas e acompanhar todo o atendimento em um só lugar. Clientes, profissionais e locadores usam fluxos próprios, com chat em tempo real, agendamentos, reputação e pagamento PIX.
+> Este repositório contém o módulo da Fixsi sob responsabilidade desta equipe. O módulo financeiro não faz parte deste código e será desenvolvido e integrado separadamente pelos demais integrantes do grupo.
 
-> Projeto em desenvolvimento. As integrações financeiras devem ser testadas primeiro no ambiente sandbox.
+## Funcionalidades
 
-## Principais recursos
-
-- Cadastro e login para clientes, profissionais e locadores.
-- Catálogo pesquisável de profissionais e serviços.
-- Catálogo de ferramentas disponíveis para aluguel.
-- Publicação de serviços e ferramentas.
-- Solicitação de orçamento e agendamento por data.
-- Chat em tempo real e envio de propostas.
-- Checkout PIX integrado ao Asaas.
-- Avaliações bilaterais após a conclusão do pedido.
-- Denúncias e painel de moderação para administradores.
-- Interface responsiva com identidade visual própria da Serveo.
+- Cadastro e autenticação com sessões seguras em cookies HTTP-only.
+- Perfis de cliente, profissional, locador e administrador.
+- Catálogo e busca de serviços por texto e categoria.
+- Catálogo e busca de ferramentas para locação.
+- Publicação e moderação de anúncios.
+- Solicitação e acompanhamento de agendamentos.
+- Chat em tempo real e propostas de orçamento incorporadas à conversa.
+- Confirmação da conclusão do serviço por profissional e cliente.
+- Avaliações, reputação e denúncias.
+- Validação de CPF no frontend e no backend.
+- Interface responsiva baseada na identidade visual do protótipo da Fixsi.
 
 ## Tecnologias
 
-| Camada     | Tecnologias                                                   |
-| ---------- | ------------------------------------------------------------- |
-| Frontend   | Next.js 16, React 19, TypeScript, Tailwind CSS, Axios, Lucide |
-| Backend    | Fastify 5, TypeScript, Zod, JWT, Socket.IO                    |
-| Dados      | PostgreSQL e Prisma                                           |
-| Pagamentos | Asaas (PIX)                                                   |
-| Monorepo   | pnpm workspaces e Turborepo                                   |
+| Camada | Tecnologias |
+| --- | --- |
+| Monorepo | pnpm workspaces e Turborepo |
+| Frontend | Next.js 16, React 19, TypeScript e Tailwind CSS |
+| Backend | Node.js, Fastify, TypeScript e Socket.IO |
+| Banco de dados | PostgreSQL, Prisma ORM e adapter `pg` |
+| Validação | Zod |
+| Autenticação | JWT, refresh token rotativo, cookies HTTP-only e bcrypt |
+| Qualidade | ESLint, Prettier, TypeScript e testes nativos do Node.js |
 
-## Estrutura do repositório
+## Estrutura
 
 ```text
 apps/
-  api/          API REST, autenticação, pagamentos e WebSocket
-  web/          Aplicação web Next.js
+  api/       API REST, autenticação e WebSocket
+  web/       aplicação Next.js
+  docs/      documentação auxiliar do monorepo
 packages/
-  database/     Schema, cliente e migrations do Prisma
-  ui/           Componentes compartilháveis do monorepo
+  database/  schema, cliente e migrações do Prisma
+  ui/        componentes compartilhados
+  eslint-config/
+  typescript-config/
 ```
 
 ## Pré-requisitos
 
-- Node.js 18 ou superior
-- pnpm 9 ou superior
-- PostgreSQL 14 ou superior
-- Conta sandbox do Asaas para testar pagamentos
+- Node.js 18 ou superior.
+- pnpm 9.
+- PostgreSQL acessível localmente ou por um provedor externo.
 
-## Instalação
+## Configuração local
 
-```bash
-git clone URL_DO_REPOSITORIO
-cd fixsi
-pnpm install
-```
+1. Clone o repositório e entre na pasta.
+2. Instale as dependências:
 
-O nome da pasta e alguns identificadores internos ainda usam `fixsi` para manter compatibilidade técnica. A marca apresentada ao usuário é **Serveo**.
+   ```bash
+   pnpm install
+   ```
 
-## Variáveis de ambiente
+3. Copie `.env.example` para `.env` e preencha os valores:
 
-Crie o arquivo `.env` esperado pelo ambiente local sem versioná-lo:
+   ```env
+   NODE_ENV=development
+   DATABASE_URL="postgresql://USUARIO:SENHA@localhost:5432/fixsi?schema=public"
+   PORT=3001
+   FRONTEND_URL="http://localhost:3000"
+   JWT_SECRET="use-um-segredo-aleatorio-com-32-ou-mais-caracteres"
+   NEXT_PUBLIC_API_URL="http://localhost:3001"
+   ```
 
-```env
-DATABASE_URL="postgresql://USUARIO:SENHA@localhost:5432/serveo?schema=public"
+4. Gere o cliente do Prisma e aplique as migrações:
 
-NODE_ENV="development"
-PORT="3001"
-FRONTEND_URL="http://localhost:3000"
-JWT_SECRET="use-um-segredo-aleatorio-com-pelo-menos-32-caracteres"
+   ```bash
+   pnpm --filter @fixsi/database exec prisma generate
+   pnpm --filter @fixsi/database exec prisma migrate deploy
+   ```
 
-NEXT_PUBLIC_API_URL="http://localhost:3001"
+5. Inicie o projeto:
 
-ASAAS_API_KEY="sua_chave_sandbox"
-ASAAS_WEBHOOK_TOKEN="um-token-de-webhook-longo-e-aleatorio"
-ASAAS_ENV="sandbox"
-```
+   ```bash
+   pnpm dev
+   ```
 
-Nunca publique `.env`, credenciais do banco, chaves Asaas ou segredos JWT.
+Por padrão, o frontend abre em `http://localhost:3000` e a API em `http://localhost:3001`.
 
-## Banco de dados
-
-Com o PostgreSQL ativo:
-
-```bash
-pnpm --filter @fixsi/database exec prisma generate
-pnpm --filter @fixsi/database exec prisma migrate dev
-```
-
-Para inspecionar os dados localmente:
-
-```bash
-pnpm --filter @fixsi/database exec prisma studio
-```
-
-## Desenvolvimento local
-
-Inicie o monorepo:
+## Comandos úteis
 
 ```bash
 pnpm dev
-```
-
-Ou execute as aplicações separadamente:
-
-```bash
-pnpm --filter api dev
-pnpm --filter web dev
-```
-
-| Serviço       | Endereço                     |
-| ------------- | ---------------------------- |
-| Aplicação web | http://localhost:3000        |
-| API           | http://localhost:3001        |
-| Saúde da API  | http://localhost:3001/health |
-
-## Validação
-
-```bash
-# Tipos e rotas geradas do frontend
-pnpm --filter web check-types
-
-# Lint do frontend
-pnpm --filter web lint
-
-# Build da API
-pnpm --filter api build
-
-# Testes automatizados da API
-pnpm --filter api test
-
-# Build completo
 pnpm build
+pnpm test
+pnpm --filter web lint
+pnpm --filter web check-types
+pnpm --filter api check-types
 ```
 
 ## Segurança
 
-- Senhas são protegidas com bcrypt.
-- Rotas privadas exigem JWT e verificam o usuário ou papel autorizado.
-- Tokens têm expiração curta; em produção, `JWT_SECRET` é obrigatório e deve ter ao menos 32 caracteres.
-- A API usa Helmet, limitação de requisições e CORS restrito ao `FRONTEND_URL`.
-- Entradas importantes são validadas com Zod e possuem limites.
-- O webhook de pagamento valida `ASAAS_WEBHOOK_TOKEN`.
-- E-mail e CPF não são alterados pela tela de perfil.
+- Não publique `.env`, credenciais de banco ou segredos JWT.
+- Use um `JWT_SECRET` exclusivo e forte em cada ambiente.
+- Em produção, configure HTTPS e os domínios exatos em `FRONTEND_URL`.
+- A autenticação usa cookies seguros e não armazena tokens no `localStorage`.
+- Rotas sensíveis exigem autenticação e autorização por papel.
+- Entradas são validadas no backend mesmo quando já existe validação visual no frontend.
+- Senhas são armazenadas somente como hash bcrypt.
 
-As sessões usam cookies `HttpOnly`, `Secure` em produção e `SameSite`, portanto o JavaScript do navegador não acessa os tokens. O access token expira em 15 minutos e é renovado automaticamente por uma sessão de 30 dias. Refresh tokens são aleatórios, armazenados apenas como hash, rotacionados a cada uso e podem ser revogados no logout. A troca de estado por cookie também exige a origem exata configurada em `FRONTEND_URL`.
+## Escopo do módulo financeiro
 
-### Migração das sessões
+Este repositório não implementa cobrança, PIX, carteira, repasse ou integração com gateways. A proposta aceita inicia o atendimento e o fluxo segue até a confirmação de conclusão. A futura integração financeira deverá ser entregue como um módulo separado, com contrato de API próprio, sem acoplar credenciais ou regras financeiras a este código.
 
-A autenticação depende da tabela `Session`. Em desenvolvimento, aplique as migrations ao banco local:
+## Licença e contexto
 
-```bash
-pnpm --filter @fixsi/database exec prisma migrate dev
-```
-
-Em produção, depois de revisar o banco de destino e fazer backup:
-
-```bash
-pnpm --filter @fixsi/database exec prisma migrate deploy
-```
-
-Faça o rollout em etapas: primeiro a migration e a API compatível, depois o frontend baseado em cookies e, por último, remova o campo legado `token` das respostas de login e refresh. Nunca execute uma migration de produção apontando para um banco que não foi conferido.
-
-## Pagamentos
-
-1. Use credenciais sandbox durante o desenvolvimento.
-2. Cadastre `POST /payments/webhook` no painel do Asaas.
-3. Defina um token exclusivo para o webhook.
-4. Nunca coloque chaves privadas em variáveis `NEXT_PUBLIC_*`.
-5. Valide o fluxo completo de criação, confirmação e liberação antes de habilitar produção.
-
-## Contribuição
-
-1. Crie uma branch a partir da versão mais recente.
-2. Faça mudanças pequenas e documentadas.
-3. Execute tipos, lint e build.
-4. Abra um Pull Request explicando o contexto e como testar.
-
-## Licença
-
-Defina uma licença antes de disponibilizar o projeto publicamente.
+Projeto acadêmico desenvolvido para a disciplina de Desenvolvimento de Solução Computacional. O uso, a distribuição e a integração devem seguir as decisões do grupo responsável pelo projeto.

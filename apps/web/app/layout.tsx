@@ -3,7 +3,7 @@ import "./globals.css";
 import { Navbar } from "./components/Navbar";
 
 export const metadata: Metadata = {
-  title: { default: "Serveo", template: "%s | Serveo" },
+  title: { default: "Fixsi", template: "%s | Fixsi" },
   description: "Encontre profissionais e contrate serviços com confiança.",
 };
 

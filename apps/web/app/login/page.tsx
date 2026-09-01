@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { ArrowLeft, LockKeyhole, Mail } from "lucide-react";
 import {
   api,
   apiErrorMessage,
@@ -36,26 +36,25 @@ export default function LoginPage() {
   }
   return (
     <main className="min-h-[calc(100vh-72px)] bg-[#F5F2ED] px-4 py-10 sm:px-6">
-      <div className="mx-auto grid max-w-5xl overflow-hidden rounded-[1.75rem] border border-[#E7E2DA] bg-white shadow-[var(--serveo-shadow)] lg:grid-cols-[.9fr_1.1fr]">
-        <aside className="hidden flex-col bg-[#17233B] p-10 text-white lg:flex">
-          <Brand inverse />
+      <div className="mx-auto grid max-w-5xl overflow-hidden rounded-[1.75rem] border border-[#E7E2DA] bg-white shadow-[var(--fixsi-shadow)] lg:grid-cols-[.9fr_1.1fr]">
+        <aside className="hidden flex-col bg-[#F97316] p-10 text-white lg:flex">
+          <span className="flex w-fit rounded-xl bg-white px-4 py-2 shadow-sm">
+            <Brand />
+          </span>
           <div className="my-auto py-16">
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-[#FFB15A]">
-              <ShieldCheck size={25} />
-            </span>
-            <p className="mt-6 text-xs font-extrabold uppercase tracking-[.16em] text-[#FFD2A3]">
+            <p className="text-xs font-extrabold uppercase tracking-[.16em] text-white/85">
               Bem-vindo de volta
             </p>
             <h1 className="mt-3 text-4xl font-extrabold leading-tight tracking-[-.04em]">
               Tudo o que você precisa, em um só lugar.
             </h1>
-            <p className="mt-5 max-w-sm leading-7 text-[#E7EAF0]">
-              Acompanhe conversas, propostas, agendamentos e pagamentos com
+            <p className="mt-5 max-w-sm leading-7 text-white/90">
+              Acompanhe conversas, propostas e agendamentos com
               segurança.
             </p>
           </div>
-          <p className="text-sm font-semibold text-[#A8C8C4]">
-            Serveo — serviços com confiança.
+          <p className="text-sm font-semibold text-white/85">
+            Fixsi — serviços com confiança.
           </p>
         </aside>
         <section className="p-7 sm:p-10 lg:p-12">
@@ -68,7 +67,7 @@ export default function LoginPage() {
           <div className="mx-auto mt-10 max-w-sm">
             <p className="eyebrow">Acesse sua conta</p>
             <h2 className="mt-2 text-3xl font-extrabold tracking-[-.035em] text-[#17233B]">
-              Entrar na Serveo
+              Entrar na Fixsi
             </h2>
             <p className="mt-2 text-[#667085]">
               Use seus dados para continuar.

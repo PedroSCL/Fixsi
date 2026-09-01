@@ -24,20 +24,10 @@ enum VerificationStatus {
 enum BookingStatus {
   PENDING
   CONFIRMED
-  AWAITING_PAYMENT
-  PAID
   IN_PROGRESS
   COMPLETED
   CANCELLED
   DISPUTED
-}
-
-enum PaymentStatus {
-  PENDING
-  HELD
-  RELEASED
-  REFUNDED
-  FAILED
 }
 
 enum ProposalStatus {
@@ -72,7 +62,6 @@ model User {
   phone         String
   cpf           String   @unique
   avatarUrl     String?
-  asaasWalletId String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -216,7 +205,6 @@ model Booking {
 
   conversation Conversation?
   proposal     Proposal?     @relation("AcceptedProposal")
-  payment      Payment?
   reviews      Review[]
 
   @@index([clientId])
@@ -272,29 +260,6 @@ model Proposal {
   booking   Booking? @relation("AcceptedProposal", fields: [bookingId], references: [id])
 
   @@index([conversationId])
-}
-
-// ─── Pagamento ────────────────────────────────────────────────────────────────
-
-model Payment {
-  id             String        @id @default(cuid())
-  status         PaymentStatus @default(PENDING)
-  amount         Decimal
-  asaasChargeId  String?       @unique
-  asaasEscrowId  String?
-  pixQrCode      String?
-  pixKey         String?
-  platformFee    Decimal?
-  providerAmount Decimal?
-  paidAt         DateTime?
-  releasedAt     DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  bookingId String  @unique
-  booking   Booking @relation(fields: [bookingId], references: [id])
-
-  @@index([status])
 }
 
 // ─── Avaliação ────────────────────────────────────────────────────────────────

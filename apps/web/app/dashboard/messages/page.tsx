@@ -165,7 +165,7 @@ export default function MessagesPage() {
         current
           ? {
               ...current,
-              booking: { ...current.booking, status: "AWAITING_PAYMENT" },
+              booking: { ...current.booking, status: "IN_PROGRESS" },
               proposals: current.proposals.map((item) => ({
                 ...item,
                 status:
@@ -181,12 +181,12 @@ export default function MessagesPage() {
       setBookings((current) =>
         current.map((booking) =>
           booking.id === selected.booking.id
-            ? { ...booking, status: "AWAITING_PAYMENT" }
+            ? { ...booking, status: "IN_PROGRESS" }
             : booking,
         ),
       );
       setProposalSuccess(
-        "Proposta aceita. O pedido está pronto para o pagamento.",
+        "Proposta aceita. O serviço está em andamento.",
       );
 
       // A mutação já foi concluída. Uma eventual falha de sincronização não
@@ -204,8 +204,6 @@ export default function MessagesPage() {
   const status = (value: string) =>
     ({
       PENDING: "Pendente",
-      AWAITING_PAYMENT: "Aguardando pagamento",
-      PAID: "Pago",
       IN_PROGRESS: "Em andamento",
       COMPLETED: "Concluído",
       CANCELLED: "Cancelado",
