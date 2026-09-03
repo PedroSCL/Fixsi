@@ -66,8 +66,8 @@ export default function NewToolPage() {
       >
         <ArrowLeft size={17} /> Voltar ao dashboard
       </Link>
-      <section className="surface-card mt-6 overflow-hidden">
-        <header className="border-b border-[#EADBAE] bg-[#FFF9EA] p-7 sm:p-9">
+      <section className="mt-6 overflow-hidden rounded-xl border-2 border-[#20365C] bg-white shadow-[7px_8px_0_rgba(32,54,92,.1)]">
+        <header className="border-b-2 border-[#20365C] bg-[#FFF0DF] p-7 sm:p-9">
           <div className="flex items-start gap-4">
             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#FFB15A] text-[#17233B]">
               <Drill size={24} />

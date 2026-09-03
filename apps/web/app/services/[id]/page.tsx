@@ -95,11 +95,7 @@ export default function ServiceDetailPage() {
         <h1 className="text-xl font-extrabold">{loadError}</h1>
         <div className="flex flex-wrap justify-center gap-3">
           {loadError !== "Serviço não encontrado" && (
-            <button
-              type="button"
-              onClick={loadService}
-              className="btn-primary"
-            >
+            <button type="button" onClick={loadService} className="btn-primary">
               <RefreshCw size={17} /> Tentar novamente
             </button>
           )}
@@ -127,8 +123,8 @@ export default function ServiceDetailPage() {
       </Link>
       <div className="mt-7 grid gap-7 lg:grid-cols-[1fr_340px]">
         <div>
-          <article className="surface-card overflow-hidden">
-            <div className="relative flex h-72 items-center justify-center overflow-hidden bg-[#FFF1E8] sm:h-96">
+          <article className="overflow-hidden rounded-xl border-2 border-[#20365C] bg-white shadow-[7px_8px_0_rgba(32,54,92,.1)]">
+            <div className="relative flex h-72 items-center justify-center overflow-hidden border-b-2 border-[#20365C] bg-[#FFF0DF] sm:h-96">
               {service.images?.[0] ? (
                 <img
                   src={service.images[0]}
@@ -197,20 +193,20 @@ export default function ServiceDetailPage() {
           )}
         </div>
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <section className="surface-card p-6">
+          <section className="rounded-xl border-2 border-[#20365C] bg-[#20365C] p-6 text-white shadow-[6px_7px_0_#F0C79E]">
             <div className="flex items-center gap-4">
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F97316] text-xl font-extrabold text-white">
                 {service.user.name?.[0]?.toUpperCase() || "?"}
               </span>
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-[#667085]">
+                <p className="text-xs font-bold uppercase tracking-wider text-white/60">
                   Profissional
                 </p>
-                <h2 className="font-extrabold text-[#17233B]">
+                <h2 className="font-extrabold text-white">
                   {service.user.name}
                 </h2>
                 {avg > 0 && (
-                  <span className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-[#984B00]">
+                  <span className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-[#FFC56E]">
                     <Star size={14} fill="#FFB15A" stroke="#FFB15A" />{" "}
                     {avg.toFixed(1)} ({reviews.length})
                   </span>

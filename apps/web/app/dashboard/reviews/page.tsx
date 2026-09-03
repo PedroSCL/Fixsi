@@ -62,13 +62,13 @@ export default function ReviewsPage() {
         </div>
       ) : (
         <>
-          <div className="surface-card mt-8 flex items-center gap-4 p-6">
-            <span className="text-4xl font-extrabold text-[#17233B]">
+          <div className="mt-8 flex items-center gap-4 rounded-xl border-2 border-[#20365C] bg-[#20365C] p-6 text-white shadow-[6px_7px_0_#F0C79E]">
+            <span className="text-4xl font-extrabold text-white">
               {average.toFixed(1)}
             </span>
             <div>
               <Stars value={Math.round(average)} />
-              <p className="mt-1 text-sm text-[#667085]">
+              <p className="mt-1 text-sm text-white/80">
                 {reviews.length}{" "}
                 {reviews.length === 1 ? "avaliação" : "avaliações"}
               </p>

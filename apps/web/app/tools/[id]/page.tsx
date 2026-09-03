@@ -88,8 +88,8 @@ export default function ToolDetailPage() {
         <ArrowLeft size={17} /> Voltar para ferramentas
       </Link>
       <div className="mt-7 grid gap-7 lg:grid-cols-[1fr_340px]">
-        <article className="surface-card overflow-hidden">
-          <div className="flex h-80 items-center justify-center bg-[#FFF9EA]">
+        <article className="overflow-hidden rounded-xl border-2 border-[#20365C] bg-white shadow-[7px_8px_0_rgba(32,54,92,.1)]">
+          <div className="flex h-80 items-center justify-center border-b-2 border-[#20365C] bg-[#FFF0DF]">
             <img
               src={tool.images?.[0] || "/img/furadeira.png"}
               alt={tool.title}
@@ -115,14 +115,14 @@ export default function ToolDetailPage() {
           </div>
         </article>
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <section className="surface-card p-6">
+          <section className="rounded-xl border-2 border-[#20365C] bg-[#20365C] p-6 text-white shadow-[6px_7px_0_#F0C79E]">
             <div className="flex items-center gap-3">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F97316] font-extrabold text-white">
                 {tool.user.name?.[0]?.toUpperCase() || "?"}
               </span>
               <span>
-                <small className="block text-[#667085]">Locador</small>
-                <strong className="text-[#17233B]">{tool.user.name}</strong>
+                <small className="block text-white/60">Locador</small>
+                <strong className="text-white">{tool.user.name}</strong>
               </span>
             </div>
             <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#FFF1E8] p-3 text-sm font-bold text-[#F97316]">

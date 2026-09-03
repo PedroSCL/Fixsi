@@ -74,8 +74,9 @@ function ServicesContent() {
   }
   return (
     <main>
-      <section className="border-b border-[#E7E2DA] bg-[#F5F2ED] py-12">
-        <div className="page-shell">
+      <section className="relative overflow-hidden border-b-2 border-[#20365C] bg-[#EEF2F7] py-12">
+        <span className="absolute -right-16 -top-28 h-64 w-64 rounded-full border-[38px] border-[#F47A00]/10" />
+        <div className="page-shell relative">
           <p className="eyebrow">Profissionais e serviços</p>
           <div className="mt-2 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
             <div>
@@ -89,7 +90,7 @@ function ServicesContent() {
             </div>
             <form
               onSubmit={submit}
-              className="flex w-full max-w-lg gap-2 rounded-2xl border border-[#F0C79E] bg-white p-2 shadow-sm"
+              className="flex w-full max-w-lg gap-2 rounded-xl border-2 border-[#20365C] bg-white p-2 shadow-[4px_5px_0_#F0C79E]"
             >
               <label className="relative flex-1">
                 <Search
@@ -120,7 +121,7 @@ function ServicesContent() {
               <button
                 key={item}
                 onClick={() => setCategory(value)}
-                className={`shrink-0 rounded-full border px-4 py-2 text-sm font-bold ${active ? "border-[#F97316] bg-[#F97316] text-white" : "border-[#E7E2DA] bg-white text-[#475467] hover:border-[#EFB67D]"}`}
+                className={`shrink-0 rounded-lg border-2 px-4 py-2 text-sm font-bold ${active ? "border-[#20365C] bg-[#F47A00] text-white shadow-[2px_3px_0_#20365C]" : "border-[#DED9D1] bg-white text-[#475467] hover:border-[#F0B878]"}`}
               >
                 {item}
               </button>
@@ -137,19 +138,14 @@ function ServicesContent() {
             ))}
           </div>
         ) : loadError ? (
-          <section
-            className="surface-card mt-8 p-12 text-center"
-            role="alert"
-          >
+          <section className="surface-card mt-8 p-12 text-center" role="alert">
             <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF1E8] text-[#F97316]">
               <RefreshCw size={27} />
             </span>
             <h2 className="mt-4 text-xl font-extrabold text-[#17233B]">
               Não foi possível carregar os serviços
             </h2>
-            <p className="mx-auto mt-2 max-w-lg text-[#667085]">
-              {loadError}
-            </p>
+            <p className="mx-auto mt-2 max-w-lg text-[#667085]">{loadError}</p>
             <button
               type="button"
               onClick={load}
@@ -186,7 +182,7 @@ function ServicesContent() {
               {services.map((service) => (
                 <article
                   key={service.id}
-                  className="group overflow-hidden rounded-2xl border border-[#E7E2DA] bg-white shadow-[0_8px_28px_rgba(23,35,59,.05)] hover:-translate-y-1 hover:shadow-xl"
+                  className="group overflow-hidden rounded-xl border-2 border-[#DED9D1] bg-white shadow-[4px_5px_0_rgba(32,54,92,.07)] hover:-translate-y-1 hover:border-[#F47A00]"
                 >
                   <div className="relative h-44 overflow-hidden bg-[#FFF1E8]">
                     <img

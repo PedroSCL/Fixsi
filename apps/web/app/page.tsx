@@ -44,24 +44,31 @@ const categories = [
 export default function Home() {
   return (
     <main>
-      <section className="relative overflow-hidden bg-[#F8F7F4] py-14 sm:py-20">
-        <div className="page-shell relative grid items-center gap-12 lg:grid-cols-[1.08fr_.92fr]">
+      <section className="relative overflow-hidden bg-[#FFF9F1] py-12 sm:py-18">
+        <div className="absolute -left-24 top-12 h-64 w-64 rounded-full border-[46px] border-[#FFE6C8] opacity-60" />
+        <div className="absolute bottom-10 right-[45%] hidden h-24 w-24 rotate-12 border-2 border-[#F47A00]/15 lg:block" />
+        <div className="page-shell relative grid items-center gap-12 lg:grid-cols-[1.02fr_.98fr]">
           <div>
-            <p className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[.16em] text-[#F97316]">
-              <span className="h-px w-9 bg-[#F97316]" />
-              Serviços locais para casa e negócio
+            <p className="inline-flex items-center gap-2 rounded-full border border-[#F0C79E] bg-white px-4 py-2 text-xs font-extrabold text-[#D96500] shadow-[2px_3px_0_rgba(32,54,92,.07)]">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFF0DF] text-[#F47A00]">
+                ✦
+              </span>
+              Serviços para o seu dia a dia
             </p>
-            <h1 className="mt-6 max-w-2xl text-4xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#17233B] sm:text-6xl">
-              Encontre profissionais.{" "}
-              <span className="text-[#F97316]">Contrate com confiança.</span>
+            <h1 className="mt-7 max-w-2xl text-4xl font-extrabold leading-[1.12] tracking-[-.035em] text-[#20365C] sm:text-5xl xl:text-[3.5rem]">
+              Encontre profissionais e contrate{" "}
+              <span className="relative inline-block text-[#F47A00] after:absolute after:-bottom-1 after:left-0 after:h-2 after:w-full after:-rotate-1 after:bg-[#FFC56E]/45 after:content-['']">
+                <span className="relative z-10">serviços</span>
+              </span>{" "}
+              para tudo o que precisar.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-[#667085]">
-              Conte o que precisa, compare opções e combine tudo direto com
-              profissionais da sua região.
+              A Fixsi conecta você a profissionais da sua região com
+              praticidade, segurança e uma conversa direta.
             </p>
             <form
               action="/services"
-              className="mt-8 flex max-w-xl flex-col gap-2 rounded-xl border border-[#D9D4CC] bg-white p-2 shadow-[0_14px_35px_rgba(23,35,59,.09)] sm:flex-row"
+              className="mt-8 flex max-w-xl flex-col gap-2 rounded-xl border-2 border-[#20365C] bg-white p-2 shadow-[5px_6px_0_#F0C79E] sm:flex-row"
             >
               <label className="relative flex-1">
                 <Search
@@ -94,17 +101,17 @@ export default function Home() {
               </span>
             </div>
           </div>
-          <aside className="relative mx-auto w-full max-w-lg overflow-hidden rounded-[2rem] bg-[#F97316] p-7 shadow-[0_24px_65px_rgba(249,115,22,.24)] sm:p-10">
+          <aside className="relative mx-auto w-full max-w-lg overflow-hidden rounded-[1.5rem_1.5rem_1.5rem_.35rem] border-2 border-[#20365C] bg-[#F47A00] p-7 shadow-[10px_12px_0_#20365C] sm:p-10">
             <img
               src="/img/tools-illustration.png"
               alt=""
               className="absolute inset-0 h-full w-full object-cover opacity-[.13] mix-blend-multiply"
             />
-            <div className="relative flex h-16 w-36 items-center justify-center rounded-xl bg-white shadow-sm">
+            <div className="relative flex h-20 w-44 items-center justify-center rounded-xl border-2 border-[#20365C] bg-white shadow-[3px_4px_0_rgba(32,54,92,.25)]">
               <img
                 src="/img/logofixsi-horizontal-tight.png"
                 alt="Fixsi"
-                className="h-11 w-auto object-contain"
+                className="h-14 w-auto object-contain"
               />
             </div>
             <p className="relative mt-10 text-xs font-extrabold uppercase tracking-[.2em] text-white/85">
@@ -115,10 +122,11 @@ export default function Home() {
             </h2>
             <Link
               href="/services"
-              className="relative mt-7 flex items-center justify-between rounded-2xl bg-white p-4 font-bold text-[#475467] shadow-lg"
+              className="relative mt-7 flex items-center justify-between rounded-xl border-2 border-[#20365C] bg-white p-4 font-bold text-[#475467] shadow-[4px_5px_0_rgba(32,54,92,.2)]"
             >
               <span className="flex items-center gap-3">
-                <Search size={20} className="text-[#F97316]" /> Buscar profissional
+                <Search size={20} className="text-[#F97316]" /> Buscar
+                profissional
               </span>
               <ArrowRight size={18} className="text-[#17233B]" />
             </Link>
@@ -127,7 +135,7 @@ export default function Home() {
                 <Link
                   key={category}
                   href={`/services?category=${encodeURIComponent(category)}`}
-                  className="rounded-xl bg-white/20 p-3 text-center text-xs font-extrabold text-white ring-1 ring-white/20 hover:bg-white hover:text-[#F97316]"
+                  className="rounded-lg border border-white/55 bg-white/15 p-3 text-center text-xs font-extrabold text-white hover:bg-white hover:text-[#F47A00]"
                 >
                   {category}
                 </Link>
@@ -137,7 +145,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-white py-16">
+      <section className="border-t border-[#E7DED2] bg-white py-16">
         <div className="page-shell">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
@@ -153,14 +161,14 @@ export default function Home() {
               Ver todos os serviços <ChevronRight size={18} />
             </Link>
           </div>
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {categories.map((category) => (
               <Link
                 key={category.name}
                 href={category.href}
-                className="group overflow-hidden rounded-2xl border border-[#E7E2DA] bg-[#FCFBF9] hover:-translate-y-1 hover:border-[#EFB67D] hover:shadow-lg"
+                className="group overflow-hidden rounded-xl border-2 border-[#DED9D1] bg-white shadow-[3px_4px_0_rgba(32,54,92,.06)] hover:-translate-y-1 hover:border-[#F47A00]"
               >
-                <div className="h-28 overflow-hidden bg-[#FFF1E8]">
+                <div className="h-28 overflow-hidden border-b border-[#E7DED2] bg-[#FFF5E9]">
                   <img
                     src={category.image}
                     alt=""
@@ -178,7 +186,7 @@ export default function Home() {
 
       <section
         id="como-funciona"
-        className="border-y border-[#E7E2DA] bg-[#F5F2ED] py-18"
+        className="border-y border-[#DED9D1] bg-[#EEF2F7] py-18"
       >
         <div className="page-shell">
           <div className="mx-auto max-w-2xl text-center">
@@ -208,7 +216,11 @@ export default function Home() {
                 text: "Agende, acompanhe o serviço e avalie ao final.",
               },
             ].map(({ icon: Icon, n, title, text }) => (
-              <article key={n} className="surface-card relative p-7">
+              <article
+                key={n}
+                className="surface-card relative overflow-hidden p-7 pt-9"
+              >
+                <span className="absolute left-0 top-0 h-1.5 w-full bg-[#F47A00]" />
                 <span className="absolute right-5 top-4 text-4xl font-extrabold text-[#F2E7DA]">
                   {n}
                 </span>

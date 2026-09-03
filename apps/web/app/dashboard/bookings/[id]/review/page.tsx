@@ -46,7 +46,8 @@ export default function ReviewPage() {
       >
         <ArrowLeft size={17} /> Voltar aos agendamentos
       </Link>
-      <section className="surface-card mt-8 p-6 sm:p-10">
+      <section className="surface-card relative mt-8 overflow-hidden p-6 pt-10 sm:p-10 sm:pt-12">
+        <span className="absolute left-0 top-0 h-2 w-full bg-[linear-gradient(90deg,#F47A00_0_38%,#20365C_38%_100%)]" />
         {success ? (
           <div className="py-8 text-center">
             <CheckCircle2 className="mx-auto text-[#F97316]" size={52} />

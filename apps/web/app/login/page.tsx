@@ -35,29 +35,29 @@ export default function LoginPage() {
     }
   }
   return (
-    <main className="min-h-[calc(100vh-72px)] bg-[#F5F2ED] px-4 py-10 sm:px-6">
-      <div className="mx-auto grid max-w-5xl overflow-hidden rounded-[1.75rem] border border-[#E7E2DA] bg-white shadow-[var(--fixsi-shadow)] lg:grid-cols-[.9fr_1.1fr]">
-        <aside className="hidden flex-col bg-[#F97316] p-10 text-white lg:flex">
-          <span className="flex w-fit rounded-xl bg-white px-4 py-2 shadow-sm">
+    <main className="min-h-[calc(100vh-84px)] bg-[#EEF2F7] px-4 py-10 sm:px-6">
+      <div className="mx-auto grid max-w-5xl overflow-hidden rounded-2xl border-2 border-[#20365C] bg-white shadow-[9px_11px_0_rgba(32,54,92,.13)] lg:grid-cols-[.9fr_1.1fr]">
+        <aside className="relative hidden flex-col overflow-hidden bg-[#F47A00] p-10 text-white lg:flex">
+          <span className="absolute -bottom-28 -left-24 h-72 w-72 rounded-full border-[42px] border-white/10" />
+          <span className="relative flex w-fit rounded-xl border-2 border-[#20365C] bg-white px-4 py-2 shadow-[4px_5px_0_rgba(32,54,92,.25)]">
             <Brand />
           </span>
-          <div className="my-auto py-16">
+          <div className="relative my-auto py-16">
             <p className="text-xs font-extrabold uppercase tracking-[.16em] text-white/85">
               Bem-vindo de volta
             </p>
-            <h1 className="mt-3 text-4xl font-extrabold leading-tight tracking-[-.04em]">
-              Tudo o que você precisa, em um só lugar.
+            <h1 className="mt-3 text-4xl font-extrabold leading-tight tracking-[-.05em]">
+              Seu próximo serviço começa aqui.
             </h1>
             <p className="mt-5 max-w-sm leading-7 text-white/90">
-              Acompanhe conversas, propostas e agendamentos com
-              segurança.
+              Acompanhe conversas, propostas e agendamentos com segurança.
             </p>
           </div>
-          <p className="text-sm font-semibold text-white/85">
-            Fixsi — serviços com confiança.
+          <p className="relative text-sm font-semibold text-white/85">
+            Prático, confiável e do seu jeito.
           </p>
         </aside>
-        <section className="p-7 sm:p-10 lg:p-12">
+        <section className="bg-[#FFFCF8] p-7 sm:p-10 lg:p-12">
           <Link
             href="/"
             className="inline-flex items-center gap-2 text-sm font-bold text-[#667085] hover:text-[#F97316]"

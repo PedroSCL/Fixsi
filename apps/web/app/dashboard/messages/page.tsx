@@ -127,8 +127,7 @@ export default function MessagesPage() {
         `/bookings/${selected.booking.id}/proposals`,
         {
           amount,
-          description:
-            proposalDescription.trim() || "Proposta de orçamento",
+          description: proposalDescription.trim() || "Proposta de orçamento",
         },
       );
 
@@ -185,9 +184,7 @@ export default function MessagesPage() {
             : booking,
         ),
       );
-      setProposalSuccess(
-        "Proposta aceita. O serviço está em andamento.",
-      );
+      setProposalSuccess("Proposta aceita. O serviço está em andamento.");
 
       // A mutação já foi concluída. Uma eventual falha de sincronização não
       // deve ser apresentada como falha ao aceitar a proposta.
@@ -231,13 +228,13 @@ export default function MessagesPage() {
           Mensagens
         </h1>
       </header>
-      <section className="surface-card mt-7 flex h-[640px] overflow-hidden">
+      <section className="mt-7 flex h-[640px] overflow-hidden rounded-xl border-2 border-[#20365C] bg-white shadow-[7px_8px_0_rgba(32,54,92,.1)]">
         <aside
           className={`${selected ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col border-r border-[#E7E2DA] md:w-80`}
         >
-          <div className="border-b border-[#E7E2DA] bg-[#F5F2ED] p-5">
-            <h2 className="font-extrabold text-[#17233B]">Suas conversas</h2>
-            <p className="mt-1 text-sm text-[#667085]">
+          <div className="border-b-2 border-[#20365C] bg-[#20365C] p-5 text-white">
+            <h2 className="font-extrabold text-white">Suas conversas</h2>
+            <p className="mt-1 text-sm text-white/80">
               {bookings.length}{" "}
               {bookings.length === 1 ? "conversa" : "conversas"}
             </p>
@@ -328,7 +325,7 @@ export default function MessagesPage() {
                   </div>
                 ))}
             </header>
-            <div className="flex flex-1 flex-col gap-3 overflow-y-auto bg-[#F8F7F4] p-4 sm:p-5">
+            <div className="flex flex-1 flex-col gap-3 overflow-y-auto bg-[#EEF2F7] p-4 sm:p-5">
               {selected.messages.length === 0 ? (
                 <div className="m-auto text-center">
                   <MessageCircle className="mx-auto text-[#9DB1AE]" size={28} />
@@ -345,7 +342,7 @@ export default function MessagesPage() {
                       className={`flex ${mine ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 sm:max-w-sm ${mine ? "rounded-br-md bg-[#F97316] text-white" : "rounded-bl-md border border-[#E7E2DA] bg-white text-[#17233B]"}`}
+                        className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 sm:max-w-sm ${mine ? "rounded-br-md bg-[#20365C] text-white" : "rounded-bl-md border border-[#E7E2DA] bg-white text-[#17233B]"}`}
                       >
                         {!mine && (
                           <strong className="mb-1 block text-xs text-[#F97316]">
@@ -466,18 +463,18 @@ export default function MessagesPage() {
               {selected.booking.status === "PENDING" &&
                 isProvider &&
                 !proposalOpen && (
-                <button
-                  onClick={() => {
-                    setProposalOpen(true);
-                    setProposalError("");
-                    setProposalSuccess("");
-                  }}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#EFB67D] py-2.5 text-sm font-extrabold text-[#F97316] hover:bg-[#FFF1E8]"
-                >
-                  <BadgeDollarSign size={18} />
-                  Enviar proposta de orçamento
-                </button>
-              )}
+                  <button
+                    onClick={() => {
+                      setProposalOpen(true);
+                      setProposalError("");
+                      setProposalSuccess("");
+                    }}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#EFB67D] py-2.5 text-sm font-extrabold text-[#F97316] hover:bg-[#FFF1E8]"
+                  >
+                    <BadgeDollarSign size={18} />
+                    Enviar proposta de orçamento
+                  </button>
+                )}
             </footer>
           </div>
         ) : (

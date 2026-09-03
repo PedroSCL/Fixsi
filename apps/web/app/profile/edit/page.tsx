@@ -138,7 +138,8 @@ export default function EditProfilePage() {
       >
         <ArrowLeft size={17} /> Voltar ao perfil
       </Link>
-      <section className="surface-card mt-8 p-6 sm:p-10">
+      <section className="surface-card relative mt-8 overflow-hidden p-6 pt-10 sm:p-10 sm:pt-12">
+        <span className="absolute left-0 top-0 h-2 w-full bg-[linear-gradient(90deg,#F47A00_0_38%,#20365C_38%_100%)]" />
         <p className="eyebrow">Dados pessoais</p>
         <h1 className="mt-2 text-3xl font-extrabold tracking-[-.035em] text-[#17233B]">
           Editar perfil

@@ -148,8 +148,9 @@ export default function BookingsPage() {
             return (
               <article
                 key={b.id}
-                className="surface-card flex flex-col gap-5 p-5 sm:flex-row sm:items-center"
+                className="surface-card relative flex flex-col gap-5 overflow-hidden p-5 pl-7 sm:flex-row sm:items-center"
               >
+                <span className="absolute bottom-0 left-0 top-0 w-1.5 bg-[#F47A00]" />
                 <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#FFF1E8] text-[#F97316]">
                   <Package size={24} />
                 </span>

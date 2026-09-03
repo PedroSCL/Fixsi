@@ -95,55 +95,65 @@ export default function DashboardPage() {
   ];
   return (
     <main className="page-shell py-10">
-      <header>
+      <header className="relative overflow-hidden rounded-xl border-2 border-[#20365C] bg-[#20365C] px-7 py-8 text-white shadow-[7px_8px_0_#F0C79E] sm:px-9">
+        <span className="absolute -right-10 -top-20 h-56 w-56 rounded-full border-[34px] border-white/5" />
         <p className="eyebrow">Sua conta</p>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-[-.035em] text-[#17233B]">
+        <h1 className="relative mt-2 text-3xl font-extrabold tracking-[-.035em] text-white">
           Olá, {user.name.split(" ")[0]}
         </h1>
-        <p className="mt-2 text-[#667085]">Gerencie sua atividade na Fixsi.</p>
+        <p className="relative mt-2 text-white/70">
+          Gerencie sua atividade na Fixsi.
+        </p>
       </header>
-      <div className="mt-8 grid gap-6 lg:grid-cols-[260px_1fr]">
-        <aside className="surface-card p-6">
-          <div className="flex flex-col items-center text-center">
-            <span className="flex h-24 w-24 items-center justify-center rounded-full bg-[#F97316] text-3xl font-extrabold text-white">
-              {user.name?.[0]?.toUpperCase() || "U"}
-            </span>
-            <h2 className="mt-4 text-xl font-extrabold text-[#17233B]">
-              {user.name}
-            </h2>
-            <p className="mt-1 text-sm font-semibold text-[#667085]">
-              {professional ? "Profissional" : locador ? "Locador" : "Cliente"}
-            </p>
+      <div className="mt-8 grid gap-7 lg:grid-cols-[280px_1fr]">
+        <aside className="overflow-hidden rounded-xl border-2 border-[#20365C] bg-white shadow-[6px_7px_0_rgba(32,54,92,.1)]">
+          <div className="border-b-2 border-[#20365C] bg-[#FFF0DF] p-5 lg:p-6">
+            <div className="grid grid-cols-[64px_1fr] items-center gap-x-4 lg:flex lg:flex-col lg:text-center">
+              <span className="row-span-2 flex h-16 w-16 items-center justify-center rounded-xl border-2 border-[#20365C] bg-[#F47A00] text-2xl font-extrabold text-white shadow-[4px_5px_0_rgba(32,54,92,.18)] lg:h-24 lg:w-24 lg:text-3xl">
+                {user.name?.[0]?.toUpperCase() || "U"}
+              </span>
+              <h2 className="self-end break-words text-lg font-extrabold text-[#17233B] lg:mt-4 lg:self-auto lg:text-xl">
+                {user.name}
+              </h2>
+              <p className="mt-1 self-start text-sm font-semibold text-[#667085] lg:self-auto">
+                {professional
+                  ? "Profissional"
+                  : locador
+                    ? "Locador"
+                    : "Cliente"}
+              </p>
+            </div>
           </div>
-          <nav className="mt-6 space-y-2">
+          <nav className="grid grid-cols-2 gap-1 p-3 text-sm lg:block lg:space-y-1 lg:p-4 lg:text-base">
             <Link
               href="/profile"
-              className="flex items-center gap-3 rounded-xl bg-[#FFF1E8] px-4 py-3 font-bold text-[#F97316]"
+              className="flex items-center gap-3 rounded-lg border-l-4 border-[#F47A00] bg-[#FFF0DF] px-4 py-3 font-bold text-[#D96500]"
             >
               <Eye size={18} /> Ver perfil
             </Link>
             <Link
               href="/profile/edit"
-              className="flex items-center gap-3 rounded-xl px-4 py-3 font-bold text-[#475467] hover:bg-[#F1F6F5]"
+              className="flex items-center gap-3 rounded-lg px-4 py-3 font-bold text-[#475467] hover:bg-[#EEF2F7]"
             >
               <Pencil size={18} /> Editar perfil
             </Link>
             <Link
               href="/"
-              className="flex items-center gap-3 rounded-xl px-4 py-3 font-bold text-[#475467] hover:bg-[#F1F6F5]"
+              className="flex items-center gap-3 rounded-lg px-4 py-3 font-bold text-[#475467] hover:bg-[#EEF2F7]"
             >
               <Home size={18} /> Página inicial
             </Link>
             <button
               onClick={logout}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 font-bold text-red-700 hover:bg-red-50"
+              className="flex w-full items-center gap-3 rounded-lg px-4 py-3 font-bold text-red-700 hover:bg-red-50"
             >
               <LogOut size={18} /> Sair
             </button>
           </nav>
         </aside>
         <div className="space-y-6">
-          <section className="surface-card p-6 sm:p-8">
+          <section className="surface-card relative overflow-hidden p-6 sm:p-8">
+            <span className="absolute left-0 top-0 h-full w-1.5 bg-[#F47A00]" />
             <div className="flex items-end justify-between">
               <div>
                 <p className="eyebrow">Acesso rápido</p>
@@ -157,7 +167,7 @@ export default function DashboardPage() {
                 <Link
                   key={href}
                   href={href}
-                  className="group rounded-2xl border border-[#E7E2DA] bg-[#FCFBF9] p-5 hover:-translate-y-1 hover:border-[#EFB67D] hover:shadow-lg"
+                  className="group rounded-xl border-2 border-[#DED9D1] bg-[#FFFCF8] p-5 hover:-translate-y-1 hover:border-[#F47A00] hover:shadow-[4px_5px_0_rgba(244,122,0,.12)]"
                 >
                   <div className="flex items-start justify-between">
                     <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFF1E8] text-[#F97316]">

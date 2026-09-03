@@ -18,7 +18,9 @@ export function Brand({
       <img
         src={source}
         alt="Fixsi"
-        className={compact ? "h-10 w-10 object-contain" : "h-12 w-auto object-contain"}
+        className={
+          compact ? "h-10 w-10 object-contain" : "h-14 w-auto object-contain"
+        }
       />
     </span>
   );

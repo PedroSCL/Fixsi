@@ -70,9 +70,10 @@ export default function ProfilePage() {
           {error || "Carregando perfil..."}
         </div>
       ) : (
-        <section className="surface-card mt-8 overflow-hidden">
-          <div className="bg-[#F97316] px-6 py-8 text-white sm:px-10">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+        <section className="mt-8 overflow-hidden rounded-xl border-2 border-[#20365C] bg-white shadow-[7px_8px_0_rgba(32,54,92,.1)]">
+          <div className="relative overflow-hidden bg-[#20365C] px-6 py-8 text-white sm:px-10">
+            <span className="absolute -right-14 -top-24 h-56 w-56 rounded-full border-[34px] border-[#F47A00]/40" />
+            <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
               {profile.avatarUrl ? (
                 <img
                   src={profile.avatarUrl}
@@ -85,7 +86,7 @@ export default function ProfilePage() {
                 </span>
               )}
               <div className="flex-1">
-                <p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#BCE4DF]">
+                <p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#FFC56E]">
                   Meu perfil
                 </p>
                 <h1 className="mt-2 text-3xl font-extrabold tracking-[-.035em]">
@@ -150,7 +151,7 @@ function Info({
       <p className="mt-4 text-xs font-extrabold uppercase tracking-[.13em] text-[#667085]">
         {label}
       </p>
-      <p className="mt-1 font-bold text-[#17233B]">{value}</p>
+      <p className="mt-1 break-words font-bold text-[#17233B]">{value}</p>
     </div>
   );
 }

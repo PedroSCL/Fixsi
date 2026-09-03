@@ -78,16 +78,16 @@ export default function AdminPage() {
       >
         <ArrowLeft size={17} /> Voltar ao dashboard
       </Link>
-      <header className="mt-7 flex items-start gap-4">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF1E8] text-[#F97316]">
+      <header className="relative mt-7 flex items-start gap-4 overflow-hidden rounded-xl border-2 border-[#20365C] bg-[#20365C] p-7 text-white shadow-[6px_7px_0_#F0C79E]">
+        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F47A00] text-white">
           <ShieldCheck size={25} />
         </span>
         <div>
           <p className="eyebrow">Moderação</p>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-[-.035em] text-[#17233B]">
+          <h1 className="mt-1 text-3xl font-extrabold tracking-[-.035em] text-white">
             Painel administrativo
           </h1>
-          <p className="mt-2 text-[#667085]">
+          <p className="mt-2 text-white/70">
             Analise denúncias abertas e proteja a comunidade.
           </p>
         </div>

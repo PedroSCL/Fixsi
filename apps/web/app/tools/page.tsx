@@ -36,7 +36,8 @@ function ToolsContent() {
   }, []);
   return (
     <main>
-      <section className="border-b border-[#EADBAE] bg-[#FFF9EA] py-12">
+      <section className="relative overflow-hidden border-b-2 border-[#20365C] bg-[#FFF0DF] py-12">
+        <span className="absolute -right-12 -top-24 h-64 w-64 rotate-12 border-[28px] border-[#FFC56E]/25" />
         <div className="page-shell grid gap-6 lg:grid-cols-[1fr_480px] lg:items-end">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[.14em] text-[#984B00]">
@@ -55,7 +56,7 @@ function ToolsContent() {
               e.preventDefault();
               load();
             }}
-            className="flex rounded-2xl border border-[#EADBAE] bg-white p-2 shadow-sm"
+            className="relative flex rounded-xl border-2 border-[#20365C] bg-white p-2 shadow-[4px_5px_0_#F0C79E]"
           >
             <label className="relative flex-1">
               <Search
@@ -69,7 +70,7 @@ function ToolsContent() {
                 className="h-11 w-full pl-10 pr-3 font-semibold outline-none"
               />
             </label>
-            <button className="rounded-xl bg-[#17233B] px-5 font-extrabold text-white">
+            <button className="rounded-lg bg-[#20365C] px-5 font-extrabold text-white hover:bg-[#152746]">
               Buscar
             </button>
           </form>
@@ -100,7 +101,7 @@ function ToolsContent() {
             {tools.map((tool, i) => (
               <article
                 key={tool.id}
-                className="group overflow-hidden rounded-2xl border border-[#E7E2DA] bg-white shadow-sm hover:-translate-y-1 hover:shadow-xl"
+                className="group overflow-hidden rounded-xl border-2 border-[#DED9D1] bg-white shadow-[4px_5px_0_rgba(32,54,92,.07)] hover:-translate-y-1 hover:border-[#F47A00]"
               >
                 <div className="h-44 bg-[#FFF9EA]">
                   <img
