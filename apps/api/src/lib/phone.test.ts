@@ -15,6 +15,7 @@ test("aceita telefone fixo e celular com DDD válido", () => {
 test("rejeita DDD, tamanho e padrões inválidos", () => {
   assert.equal(isValidBrazilianPhone("(10) 3131-2311"), false);
   assert.equal(isValidBrazilianPhone("123456789"), false);
+  assert.equal(isValidBrazilianPhone("5561999990000"), false);
   assert.equal(isValidBrazilianPhone("11111111111"), false);
   assert.equal(isValidBrazilianPhone("(61) 89999-0000"), false);
 });
