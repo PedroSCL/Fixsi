@@ -10,11 +10,20 @@ import {
   rotateSession,
 } from "../lib/session";
 import { isValidCpf, maskCpf, normalizeCpf } from "../lib/cpf";
+import { isValidBrazilianPhone, normalizePhone } from "../lib/phone";
 
 const cpfSchema = z
   .string()
   .transform(normalizeCpf)
   .refine(isValidCpf, "Informe um CPF válido");
+
+const phoneSchema = z
+  .string()
+  .transform(normalizePhone)
+  .refine(
+    isValidBrazilianPhone,
+    "Informe um telefone brasileiro válido com DDD",
+  );
 
 const registerSchema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -33,7 +42,7 @@ const registerSchema = z.object({
       /[^a-zA-Z0-9]/,
       "Senha deve conter pelo menos um caractere especial",
     ),
-  phone: z.string().min(10, "Telefone inválido"),
+  phone: phoneSchema,
   cpf: cpfSchema,
   role: z.enum(["CLIENT", "PROFESSIONAL", "LOCADOR"]).default("CLIENT"),
 });
@@ -50,7 +59,7 @@ const loginSchema = z.object({
 const updateProfileSchema = z
   .object({
     name: z.string().trim().min(2).max(100),
-    phone: z.string().trim().min(10).max(15),
+    phone: phoneSchema,
     avatarUrl: z
       .union([z.string().trim().url(), z.literal(""), z.null()])
       .optional(),

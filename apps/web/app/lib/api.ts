@@ -23,9 +23,23 @@ export function notifyAuthChanged() {
 }
 
 export function apiErrorMessage(error: unknown, fallback: string) {
-  return axios.isAxiosError(error)
-    ? error.response?.data?.error || fallback
-    : fallback;
+  if (!axios.isAxiosError(error)) return fallback;
+
+  const data = error.response?.data;
+  const fields = data?.fields;
+
+  if (fields && typeof fields === "object") {
+    for (const messages of Object.values(fields)) {
+      if (Array.isArray(messages)) {
+        const message = messages.find(
+          (item): item is string => typeof item === "string" && item.length > 0,
+        );
+        if (message) return message;
+      }
+    }
+  }
+
+  return data?.error || fallback;
 }
 
 export function isUnauthorized(error: unknown) {

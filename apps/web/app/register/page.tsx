@@ -17,6 +17,11 @@ import {
   notifyAuthChanged,
 } from "../lib/api";
 import { formatCpf, isValidCpf, normalizeCpf } from "../lib/cpf";
+import {
+  formatPhone,
+  isValidBrazilianPhone,
+  normalizePhone,
+} from "../lib/phone";
 import { Brand } from "../components/Brand";
 
 const roles = [
@@ -52,10 +57,23 @@ export default function RegisterPage() {
     cpf: "",
     role: "CLIENT" as "CLIENT" | "PROFESSIONAL" | "LOCADOR",
   });
-  const update = (field: string, value: string) =>
+  const update = (field: string, value: string) => {
+    setError("");
     setForm((p) => ({ ...p, [field]: value }));
+  };
   const cpfValid = isValidCpf(form.cpf);
   const cpfComplete = normalizeCpf(form.cpf).length === 11;
+  const phoneDigits = normalizePhone(form.phone);
+  const phoneComplete = phoneDigits.length >= 10;
+  const phoneValid = isValidBrazilianPhone(phoneDigits);
+  const passwordValid =
+    form.password.length >= 8 &&
+    /[A-Z]/.test(form.password) &&
+    /[0-9]/.test(form.password) &&
+    /[^a-zA-Z0-9]/.test(form.password);
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+  const firstStepValid =
+    form.name.trim().length >= 2 && emailValid && passwordValid;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,9 +82,18 @@ export default function RegisterPage() {
       setError("Informe um CPF válido para criar sua conta.");
       return;
     }
+    if (!phoneValid) {
+      setError("Informe um telefone brasileiro válido com DDD.");
+      return;
+    }
     setLoading(true);
     try {
-      await api.post("/auth/register", form);
+      await api.post("/auth/register", {
+        ...form,
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: phoneDigits,
+      });
       clearLegacyAuthStorage();
       notifyAuthChanged();
       router.push("/dashboard");
@@ -179,7 +206,18 @@ export default function RegisterPage() {
                       className="field mt-2"
                       placeholder="Mínimo de 8 caracteres"
                       autoComplete="new-password"
+                      minLength={8}
+                      maxLength={128}
                     />
+                    <span
+                      className={`mt-2 block text-xs font-semibold ${
+                        form.password && !passwordValid
+                          ? "text-red-600"
+                          : "text-[#667085]"
+                      }`}
+                    >
+                      Use 8 caracteres, uma maiúscula, um número e um símbolo.
+                    </span>
                   </label>
                 </div>
                 <div>
@@ -214,7 +252,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  disabled={!form.name || !form.email || !form.password}
+                  disabled={!firstStepValid}
                   className="btn-primary w-full disabled:opacity-50"
                 >
                   Continuar
@@ -264,16 +302,40 @@ export default function RegisterPage() {
                   <label className="block text-sm font-extrabold text-[#17233B]">
                     Telefone
                     <input
-                      value={form.phone}
+                      value={formatPhone(form.phone)}
                       onChange={(e) =>
-                        update("phone", e.target.value.replace(/\D/g, ""))
+                        update("phone", normalizePhone(e.target.value))
                       }
                       required
-                      className="field mt-2"
-                      placeholder="DDD + número"
+                      maxLength={15}
+                      className={`field mt-2 ${
+                        phoneComplete
+                          ? phoneValid
+                            ? "border-emerald-500"
+                            : "border-red-400"
+                          : ""
+                      }`}
+                      placeholder="(61) 99999-0000"
                       inputMode="tel"
                       autoComplete="tel"
+                      aria-invalid={phoneComplete && !phoneValid}
                     />
+                    <span
+                      className={`mt-2 flex items-center gap-1.5 text-xs font-semibold ${
+                        phoneComplete && !phoneValid
+                          ? "text-red-600"
+                          : phoneValid
+                            ? "text-emerald-700"
+                            : "text-[#667085]"
+                      }`}
+                    >
+                      {phoneValid && <CircleCheck size={14} />}
+                      {phoneComplete && !phoneValid
+                        ? "Informe um DDD e um número de telefone válidos."
+                        : phoneValid
+                          ? "Telefone válido."
+                          : "Informe o DDD e o número do telefone."}
+                    </span>
                   </label>
                 </div>
                 <div className="rounded-xl bg-[#F8F7F4] p-4 text-sm leading-6 text-[#667085]">
@@ -297,11 +359,7 @@ export default function RegisterPage() {
                     Voltar
                   </button>
                   <button
-                    disabled={
-                      loading ||
-                      !cpfValid ||
-                      form.phone.replace(/\D/g, "").length < 10
-                    }
+                    disabled={loading || !cpfValid || !phoneValid}
                     className="btn-primary disabled:opacity-50"
                   >
                     {loading ? "Criando..." : "Criar conta"}
