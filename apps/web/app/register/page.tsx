@@ -88,15 +88,32 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
+      const credentials = {
+        email: form.email.trim(),
+        password: form.password,
+      };
+
       await api.post("/auth/register", {
         ...form,
         name: form.name.trim(),
-        email: form.email.trim(),
+        email: credentials.email,
         phone: phoneDigits,
       });
+
+      try {
+        await api.get("/auth/me");
+      } catch {
+        // Alguns proxies podem atrasar a disponibilização dos cookies de uma
+        // resposta de criação. O login imediato garante que o usuário recém-
+        // cadastrado chegue ao dashboard com uma sessão válida.
+        await api.post("/auth/login", credentials);
+        await api.get("/auth/me");
+      }
+
       clearLegacyAuthStorage();
       notifyAuthChanged();
-      router.push("/dashboard");
+      router.replace("/dashboard");
+      router.refresh();
     } catch (err: unknown) {
       setError(apiErrorMessage(err, "Não foi possível criar sua conta."));
     } finally {
