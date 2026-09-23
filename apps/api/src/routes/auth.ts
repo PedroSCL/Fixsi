@@ -11,6 +11,7 @@ import {
 } from "../lib/session";
 import { isValidCpf, maskCpf, normalizeCpf } from "../lib/cpf";
 import { isValidBrazilianPhone, normalizePhone } from "../lib/phone";
+import { rolesForAccountType } from "../lib/account-roles";
 
 const cpfSchema = z
   .string()
@@ -44,7 +45,7 @@ const registerSchema = z.object({
     ),
   phone: phoneSchema,
   cpf: cpfSchema,
-  role: z.enum(["CLIENT", "PROFESSIONAL", "LOCADOR"]).default("CLIENT"),
+  role: z.enum(["CLIENT", "PROFESSIONAL"]).default("CLIENT"),
 });
 
 const loginSchema = z.object({
@@ -65,6 +66,7 @@ const updateProfileSchema = z
       .optional(),
     cpf: cpfSchema.optional(),
     currentPassword: z.string().min(1).max(128).optional(),
+    accountType: z.enum(["CLIENT", "PROFESSIONAL"]).optional(),
   })
   .superRefine((values, context) => {
     if (values.cpf && !values.currentPassword) {
@@ -115,11 +117,9 @@ export async function authRoutes(app: FastifyInstance) {
           },
         });
 
-        await tx.userRole.create({
-          data: {
-            userId: newUser.id,
-            type: body.role,
-          },
+        const roles = rolesForAccountType(body.role);
+        await tx.userRole.createMany({
+          data: roles.map((type) => ({ userId: newUser.id, type })),
         });
 
         return newUser;
@@ -133,7 +133,7 @@ export async function authRoutes(app: FastifyInstance) {
           name: user.name,
           email: user.email,
           phone: user.phone,
-          roles: [body.role],
+          roles: rolesForAccountType(body.role),
         },
         token,
       });
@@ -294,30 +294,53 @@ export async function authRoutes(app: FastifyInstance) {
         }
       }
 
-      const user = await prisma.user.update({
-        where: { id: userId },
-        data: {
-          name: body.name,
-          phone: body.phone,
-          avatarUrl: body.avatarUrl || null,
-          ...(cpfChanged
-            ? {
-                cpf: body.cpf,
-              }
-            : {}),
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          cpf: true,
-          avatarUrl: true,
-          roles: {
-            where: { active: true },
-            select: { type: true },
+      const user = await prisma.$transaction(async (tx) => {
+        if (body.accountType) {
+          await tx.userRole.upsert({
+            where: { userId_type: { userId, type: "CLIENT" } },
+            create: { userId, type: "CLIENT", active: true },
+            update: { active: true },
+          });
+
+          if (body.accountType === "PROFESSIONAL") {
+            await tx.userRole.upsert({
+              where: { userId_type: { userId, type: "PROFESSIONAL" } },
+              create: { userId, type: "PROFESSIONAL", active: true },
+              update: { active: true },
+            });
+          } else {
+            await tx.userRole.updateMany({
+              where: { userId, type: "PROFESSIONAL" },
+              data: { active: false },
+            });
+          }
+        }
+
+        return tx.user.update({
+          where: { id: userId },
+          data: {
+            name: body.name,
+            phone: body.phone,
+            avatarUrl: body.avatarUrl || null,
+            ...(cpfChanged
+              ? {
+                  cpf: body.cpf,
+                }
+              : {}),
           },
-        },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            cpf: true,
+            avatarUrl: true,
+            roles: {
+              where: { active: true },
+              select: { type: true },
+            },
+          },
+        });
       });
 
       const { cpf, ...safeUser } = user;

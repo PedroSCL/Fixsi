@@ -7,7 +7,6 @@ import {
   BriefcaseBusiness,
   Check,
   CircleCheck,
-  Drill,
   UserRound,
 } from "lucide-react";
 import {
@@ -33,15 +32,9 @@ const roles = [
   },
   {
     value: "PROFESSIONAL",
-    label: "Quero trabalhar",
-    text: "Publique seus serviços",
+    label: "Quero anunciar",
+    text: "Publique serviços e ferramentas",
     icon: BriefcaseBusiness,
-  },
-  {
-    value: "LOCADOR",
-    label: "Quero alugar",
-    text: "Anuncie ferramentas",
-    icon: Drill,
   },
 ] as const;
 export default function RegisterPage() {
@@ -55,7 +48,7 @@ export default function RegisterPage() {
     password: "",
     phone: "",
     cpf: "",
-    role: "CLIENT" as "CLIENT" | "PROFESSIONAL" | "LOCADOR",
+    role: "CLIENT" as "CLIENT" | "PROFESSIONAL",
   });
   const update = (field: string, value: string) => {
     setError("");
@@ -155,7 +148,7 @@ export default function RegisterPage() {
             </ol>
           </div>
           <p className="relative mt-auto pt-12 text-sm leading-6 text-white/75">
-            Profissionais, clientes e locadores em um só lugar.
+            Clientes e profissionais em um só lugar.
           </p>
         </aside>
         <div>
@@ -241,7 +234,7 @@ export default function RegisterPage() {
                   <p className="text-sm font-extrabold text-[#17233B]">
                     Como você quer usar a Fixsi?
                   </p>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     {roles.map(({ value, label, text, icon: Icon }) => (
                       <button
                         key={value}

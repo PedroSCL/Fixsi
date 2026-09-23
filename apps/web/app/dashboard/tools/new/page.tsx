@@ -23,7 +23,7 @@ const CATEGORIES = [
 ];
 export default function NewToolPage() {
   const router = useRouter();
-  const allowed = useRequireRole("LOCADOR");
+  const allowed = useRequireRole("PROFESSIONAL");
   const [loading, setLoading] = useState(false),
     [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -74,7 +74,7 @@ export default function NewToolPage() {
             </span>
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[.14em] text-[#984B00]">
-                Área do locador
+                Área profissional
               </p>
               <h1 className="mt-1 text-2xl font-extrabold text-[#17233B]">
                 Anunciar ferramenta

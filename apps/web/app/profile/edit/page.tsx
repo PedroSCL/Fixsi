@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import {
   ArrowLeft,
+  BriefcaseBusiness,
   Check,
   IdCard,
   Image as ImageIcon,
@@ -27,6 +28,9 @@ export default function EditProfilePage() {
     currentPassword: "",
   });
   const [email, setEmail] = useState("");
+  const [accountType, setAccountType] = useState<"CLIENT" | "PROFESSIONAL">(
+    "CLIENT",
+  );
   const [cpfMasked, setCpfMasked] = useState("");
   const [cpfIsValid, setCpfIsValid] = useState(true);
   const [correctingCpf, setCorrectingCpf] = useState(false);
@@ -46,6 +50,9 @@ export default function EditProfilePage() {
           currentPassword: "",
         });
         setEmail(data.user.email);
+        setAccountType(
+          data.user.roles?.includes("PROFESSIONAL") ? "PROFESSIONAL" : "CLIENT",
+        );
         setCpfMasked(data.user.cpfMasked);
         setCpfIsValid(data.user.cpfValid);
         setCorrectingCpf(!data.user.cpfValid);
@@ -85,6 +92,7 @@ export default function EditProfilePage() {
         name: form.name,
         phone: form.phone,
         avatarUrl: form.avatarUrl,
+        accountType,
         ...(correctingCpf
           ? {
               cpf: normalizeCpf(form.cpf),
@@ -148,6 +156,57 @@ export default function EditProfilePage() {
           Mantenha seus dados atualizados para facilitar o contato.
         </p>
         <form onSubmit={submit} className="mt-8 space-y-5">
+          <div className="rounded-2xl border border-[#E7E2DA] bg-[#FCFBF9] p-5">
+            <p className="text-sm font-extrabold text-[#17233B]">
+              Tipo de conta
+            </p>
+            <p className="mt-1 text-sm leading-6 text-[#667085]">
+              Profissionais também podem contratar normalmente como clientes.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                aria-pressed={accountType === "CLIENT"}
+                onClick={() => setAccountType("CLIENT")}
+                className={`rounded-xl border-2 p-4 text-left transition ${
+                  accountType === "CLIENT"
+                    ? "border-[#F47A00] bg-[#FFF0DF]"
+                    : "border-[#DED9D1] bg-white hover:border-[#F0B878]"
+                }`}
+              >
+                <span className="flex items-center gap-2 font-extrabold text-[#17233B]">
+                  <UserRound size={18} className="text-[#F47A00]" /> Cliente
+                </span>
+                <span className="mt-1 block text-sm text-[#667085]">
+                  Contratar serviços e ferramentas
+                </span>
+              </button>
+              <button
+                type="button"
+                aria-pressed={accountType === "PROFESSIONAL"}
+                onClick={() => setAccountType("PROFESSIONAL")}
+                className={`rounded-xl border-2 p-4 text-left transition ${
+                  accountType === "PROFESSIONAL"
+                    ? "border-[#F47A00] bg-[#FFF0DF]"
+                    : "border-[#DED9D1] bg-white hover:border-[#F0B878]"
+                }`}
+              >
+                <span className="flex items-center gap-2 font-extrabold text-[#17233B]">
+                  <BriefcaseBusiness size={18} className="text-[#F47A00]" />
+                  Profissional
+                </span>
+                <span className="mt-1 block text-sm text-[#667085]">
+                  Contratar e também publicar serviços e ferramentas
+                </span>
+              </button>
+            </div>
+            {accountType === "CLIENT" && (
+              <p className="mt-3 text-xs leading-5 text-[#667085]">
+                Seus anúncios existentes não serão apagados, mas novos anúncios
+                exigirão que o perfil profissional seja reativado.
+              </p>
+            )}
+          </div>
           <Field icon={UserRound} label="Nome completo">
             <input
               className="field field-with-leading"

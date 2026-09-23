@@ -1,13 +1,13 @@
 # Fixsi
 
-Plataforma web acadêmica para aproximar clientes, prestadores de serviços e locadores de ferramentas. A aplicação permite descobrir profissionais, publicar serviços e equipamentos, conversar, negociar propostas, agendar atendimentos e avaliar a experiência.
+Plataforma web acadêmica para aproximar clientes e profissionais que oferecem serviços ou ferramentas. A aplicação permite descobrir profissionais, publicar serviços e equipamentos, conversar, negociar propostas, agendar atendimentos e avaliar a experiência.
 
 > Este repositório contém o módulo da Fixsi sob responsabilidade desta equipe. O módulo financeiro não faz parte deste código e será desenvolvido e integrado separadamente pelos demais integrantes do grupo.
 
 ## Funcionalidades
 
 - Cadastro e autenticação com sessões seguras em cookies HTTP-only.
-- Perfis de cliente, profissional, locador e administrador.
+- Perfis de cliente, profissional e administrador. Profissionais também podem contratar como clientes.
 - Catálogo e busca de serviços por texto e categoria.
 - Catálogo e busca de ferramentas para locação.
 - Publicação e moderação de anúncios.
@@ -20,15 +20,15 @@ Plataforma web acadêmica para aproximar clientes, prestadores de serviços e lo
 
 ## Tecnologias
 
-| Camada | Tecnologias |
-| --- | --- |
-| Monorepo | pnpm workspaces e Turborepo |
-| Frontend | Next.js 16, React 19, TypeScript e Tailwind CSS |
-| Backend | Node.js, Fastify, TypeScript e Socket.IO |
-| Banco de dados | PostgreSQL, Prisma ORM e adapter `pg` |
-| Validação | Zod |
-| Autenticação | JWT, refresh token rotativo, cookies HTTP-only e bcrypt |
-| Qualidade | ESLint, Prettier, TypeScript e testes nativos do Node.js |
+| Camada         | Tecnologias                                              |
+| -------------- | -------------------------------------------------------- |
+| Monorepo       | pnpm workspaces e Turborepo                              |
+| Frontend       | Next.js 16, React 19, TypeScript e Tailwind CSS          |
+| Backend        | Node.js, Fastify, TypeScript e Socket.IO                 |
+| Banco de dados | PostgreSQL, Prisma ORM e adapter `pg`                    |
+| Validação      | Zod                                                      |
+| Autenticação   | JWT, refresh token rotativo, cookies HTTP-only e bcrypt  |
+| Qualidade      | ESLint, Prettier, TypeScript e testes nativos do Node.js |
 
 ## Estrutura
 

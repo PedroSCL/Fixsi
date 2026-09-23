@@ -183,7 +183,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Booking não encontrado" });
     }
 
-    // Só o cliente ou o profissional/locador podem ver
+    // Só o cliente ou o profissional responsável podem ver
     const providerId = booking.service?.user?.id || booking.tool?.user?.id;
 
     if (booking.clientId !== userId && providerId !== userId) {
@@ -215,7 +215,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
         return reply.code(404).send({ error: "Booking não encontrado" });
       }
 
-      // Só o profissional/locador dono do serviço pode enviar proposta
+      // Só o profissional dono do anúncio pode enviar proposta
       const providerId = booking.service?.userId || booking.tool?.userId;
       if (providerId !== userId) {
         return reply.code(403).send({ error: "Sem permissão" });

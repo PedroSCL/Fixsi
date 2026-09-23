@@ -129,14 +129,14 @@ export async function toolsRoutes(app: FastifyInstance) {
     const body = createToolSchema.parse(request.body);
     const userId = (request.user as { id: string }).id;
 
-    // Verifica se tem papel de LOCADOR
+    // Profissionais podem anunciar tanto serviços quanto ferramentas.
     const role = await prisma.userRole.findUnique({
-      where: { userId_type: { userId, type: "LOCADOR" } },
+      where: { userId_type: { userId, type: "PROFESSIONAL" } },
     });
 
     if (!role?.active) {
       return reply.code(403).send({
-        error: "Apenas Locadores podem cadastrar ferramentas",
+        error: "Apenas profissionais podem cadastrar ferramentas",
       });
     }
 

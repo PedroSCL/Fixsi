@@ -87,7 +87,7 @@ export function setupSocket(
         conversation.booking.service?.userId ||
         conversation.booking.tool?.userId;
 
-      // Só o cliente e o profissional/locador podem entrar
+      // Só o cliente e o profissional responsável podem entrar
       if (userId !== clientId && userId !== providerId) {
         socket.emit("error", { message: "Sem permissão" });
         return;

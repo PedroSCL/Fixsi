@@ -47,7 +47,6 @@ export default function DashboardPage() {
       </div>
     );
   const professional = user.roles?.includes("PROFESSIONAL"),
-    locador = user.roles?.includes("LOCADOR"),
     admin = user.roles?.includes("ADMIN");
   const tiles = [
     ...(professional
@@ -60,7 +59,7 @@ export default function DashboardPage() {
           },
         ]
       : []),
-    ...(locador
+    ...(professional
       ? [
           {
             href: "/dashboard/tools/new",
@@ -116,11 +115,7 @@ export default function DashboardPage() {
                 {user.name}
               </h2>
               <p className="mt-1 self-start text-sm font-semibold text-[#667085] lg:self-auto">
-                {professional
-                  ? "Profissional"
-                  : locador
-                    ? "Locador"
-                    : "Cliente"}
+                {professional ? "Profissional" : "Cliente"}
               </p>
             </div>
           </div>

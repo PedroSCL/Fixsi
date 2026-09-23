@@ -40,7 +40,7 @@ export async function reviewsRoutes(app: FastifyInstance) {
 
       const providerId = booking.service?.userId || booking.tool?.userId;
 
-      // Só o cliente ou o profissional/locador podem avaliar
+      // Só o cliente ou o profissional responsável podem avaliar
       const isClient = booking.clientId === userId;
       const isProvider = providerId === userId;
 

@@ -121,7 +121,7 @@ export default function ToolDetailPage() {
                 {tool.user.name?.[0]?.toUpperCase() || "?"}
               </span>
               <span>
-                <small className="block text-white/60">Locador</small>
+                <small className="block text-white/60">Profissional</small>
                 <strong className="text-white">{tool.user.name}</strong>
               </span>
             </div>

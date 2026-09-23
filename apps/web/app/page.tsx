@@ -244,7 +244,7 @@ export default function Home() {
               <BriefcaseBusiness size={23} />
             </span>
             <p className="mt-6 text-sm font-extrabold uppercase tracking-[.14em] text-[#FFD2A3]">
-              Para profissionais
+              Serviços profissionais
             </p>
             <h2 className="mt-2 text-3xl font-extrabold tracking-[-.035em]">
               Transforme seu trabalho em novas oportunidades.
@@ -265,7 +265,7 @@ export default function Home() {
               <Drill size={23} />
             </span>
             <p className="mt-6 text-sm font-extrabold uppercase tracking-[.14em] text-[#984B00]">
-              Para locadores
+              Locação de ferramentas
             </p>
             <h2 className="mt-2 text-3xl font-extrabold tracking-[-.035em] text-[#17233B]">
               Sua ferramenta pode gerar renda.

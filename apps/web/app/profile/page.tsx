@@ -28,7 +28,6 @@ interface Profile {
 const roleNames: Record<string, string> = {
   CLIENT: "Cliente",
   PROFESSIONAL: "Profissional",
-  LOCADOR: "Locador",
   ADMIN: "Administrador",
 };
 
@@ -93,14 +92,20 @@ export default function ProfilePage() {
                   {profile.name}
                 </h1>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {profile.roles.map((role) => (
-                    <span
-                      key={role}
-                      className="rounded-full bg-white/15 px-3 py-1 text-xs font-extrabold"
-                    >
-                      {roleNames[role] || role}
-                    </span>
-                  ))}
+                  {profile.roles
+                    .filter(
+                      (role) =>
+                        role !== "CLIENT" ||
+                        !profile.roles.includes("PROFESSIONAL"),
+                    )
+                    .map((role) => (
+                      <span
+                        key={role}
+                        className="rounded-full bg-white/15 px-3 py-1 text-xs font-extrabold"
+                      >
+                        {roleNames[role] || role}
+                      </span>
+                    ))}
                 </div>
               </div>
               <Link

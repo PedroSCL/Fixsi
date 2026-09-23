@@ -48,7 +48,7 @@ function ToolsContent() {
             </h1>
             <p className="mt-3 max-w-xl text-[#667085]">
               Encontre ferramentas disponíveis e combine o aluguel direto com o
-              locador.
+              profissional anunciante.
             </p>
           </div>
           <form
