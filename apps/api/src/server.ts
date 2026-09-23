@@ -14,6 +14,7 @@ import { adminRoutes } from "./routes/admin";
 import { conversationsRoutes } from "./routes/conversations";
 import { setupSocket } from "./lib/socket";
 import { reviewsRoutes } from "./routes/reviews";
+import { availabilityRoutes } from "./routes/availability";
 import { getEnvironment } from "./config/env";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "./lib/session";
 
@@ -101,6 +102,7 @@ async function main() {
   await app.register(adminRoutes, { prefix: "/admin" });
   await app.register(conversationsRoutes, { prefix: "/conversations" });
   await app.register(reviewsRoutes, { prefix: "/reviews" });
+  await app.register(availabilityRoutes, { prefix: "/availability" });
 
   app.get("/health", async () => ({ status: "ok" }));
 

@@ -2,6 +2,14 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../plugins/authenticate";
+import {
+  DEFAULT_WEEKDAYS,
+  addUtcDays,
+  formatDateOnly,
+  isDateAvailable,
+  parseDateOnly,
+  todayUtc,
+} from "../lib/calendar";
 
 const createBookingSchema = z
   .object({
@@ -10,9 +18,11 @@ const createBookingSchema = z
     startDate: z.string(),
     endDate: z.string().optional(),
   })
-  .refine((data) => data.serviceId || data.toolId, {
-    message: "Informe um serviceId ou toolId",
-  });
+  .refine(
+    (data) =>
+      Number(Boolean(data.serviceId)) + Number(Boolean(data.toolId)) === 1,
+    { message: "Informe apenas um serviceId ou toolId" },
+  );
 
 const createProposalSchema = z.object({
   amount: z.number().positive().max(1_000_000),
@@ -25,6 +35,12 @@ export async function bookingsRoutes(app: FastifyInstance) {
   app.post("/", { preHandler: [authenticate] }, async (request, reply) => {
     const body = createBookingSchema.parse(request.body);
     const clientId = (request.user as { id: string }).id;
+    const startDate = parseDateOnly(body.startDate);
+    const endDate = body.endDate ? parseDateOnly(body.endDate) : null;
+
+    if (startDate < todayUtc() || (endDate && endDate < startDate)) {
+      return reply.code(400).send({ error: "Período do agendamento inválido" });
+    }
 
     // Verifica se tem papel de CLIENT
     const role = await prisma.userRole.findUnique({
@@ -38,6 +54,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
     }
 
     // Valida se o serviço ou ferramenta existe e está disponível
+    let providerId = "";
     if (body.serviceId) {
       const service = await prisma.service.findUnique({
         where: { id: body.serviceId },
@@ -52,6 +69,39 @@ export async function bookingsRoutes(app: FastifyInstance) {
         return reply
           .code(400)
           .send({ error: "Você não pode contratar seu próprio serviço" });
+      }
+      providerId = service.userId;
+
+      const [rules, exception, occupied] = await Promise.all([
+        prisma.professionalAvailability.findMany({
+          where: { userId: providerId, active: true },
+          select: { weekday: true },
+        }),
+        prisma.availabilityException.findUnique({
+          where: { userId_date: { userId: providerId, date: startDate } },
+          select: { available: true },
+        }),
+        prisma.booking.findFirst({
+          where: {
+            providerId,
+            startDate: { gte: startDate, lt: addUtcDays(startDate, 1) },
+            status: { in: ["CONFIRMED", "IN_PROGRESS"] },
+          },
+          select: { id: true },
+        }),
+      ]);
+      const weekdays = rules.length
+        ? rules.map((rule) => rule.weekday)
+        : DEFAULT_WEEKDAYS;
+      const exceptions = new Map<string, boolean>();
+      if (exception) {
+        exceptions.set(formatDateOnly(startDate), exception.available);
+      }
+
+      if (!isDateAvailable(startDate, weekdays, exceptions) || occupied) {
+        return reply.code(409).send({
+          error: "O profissional não está disponível nesta data",
+        });
       }
     }
 
@@ -69,6 +119,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
           .code(400)
           .send({ error: "Você não pode alugar sua própria ferramenta" });
       }
+      providerId = tool.userId;
     }
 
     // Cria o Booking e a Conversation numa transação
@@ -77,10 +128,11 @@ export async function bookingsRoutes(app: FastifyInstance) {
       const newBooking = await tx.booking.create({
         data: {
           clientId,
+          providerId,
           serviceId: body.serviceId,
           toolId: body.toolId,
-          startDate: new Date(body.startDate),
-          endDate: body.endDate ? new Date(body.endDate) : null,
+          startDate,
+          endDate,
           status: "PENDING",
         },
       });
@@ -104,6 +156,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
           select: { id: true, title: true, category: true, userId: true },
         },
         client: { select: { id: true, name: true } },
+        provider: { select: { id: true, name: true } },
       },
     });
 
@@ -116,11 +169,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
 
     const bookings = await prisma.booking.findMany({
       where: {
-        OR: [
-          { clientId: userId },
-          { service: { userId } },
-          { tool: { userId } },
-        ],
+        OR: [{ clientId: userId }, { providerId: userId }],
       },
       include: {
         service: {
@@ -131,6 +180,8 @@ export async function bookingsRoutes(app: FastifyInstance) {
         },
         conversation: { select: { id: true } },
         proposal: true,
+        client: { select: { id: true, name: true, avatarUrl: true } },
+        provider: { select: { id: true, name: true, avatarUrl: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -184,9 +235,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
     }
 
     // Só o cliente ou o profissional responsável podem ver
-    const providerId = booking.service?.user?.id || booking.tool?.user?.id;
-
-    if (booking.clientId !== userId && providerId !== userId) {
+    if (booking.clientId !== userId && booking.providerId !== userId) {
       return reply.code(403).send({ error: "Sem permissão" });
     }
 
@@ -282,10 +331,13 @@ export async function bookingsRoutes(app: FastifyInstance) {
       if (
         proposal.status === "ACCEPTED" &&
         proposal.bookingId === id &&
-        booking.status === "IN_PROGRESS"
+        ["CONFIRMED", "IN_PROGRESS"].includes(booking.status)
       ) {
         return reply.send({
-          message: "Proposta já aceita. O serviço está em andamento.",
+          message:
+            booking.status === "CONFIRMED"
+              ? "Proposta já aceita. O serviço está confirmado."
+              : "Proposta já aceita. O serviço está em andamento.",
         });
       }
 
@@ -295,33 +347,82 @@ export async function bookingsRoutes(app: FastifyInstance) {
           .send({ error: "Proposta não está mais disponível" });
       }
 
-      // Aceita a proposta e atualiza o booking numa transação
-      await prisma.$transaction(async (tx) => {
-        await tx.proposal.update({
-          where: { id: proposalId },
-          data: { status: "ACCEPTED", bookingId: id },
-        });
+      try {
+        // O índice parcial no banco é a última proteção contra duas confirmações
+        // simultâneas para o mesmo profissional e a mesma data.
+        await prisma.$transaction(async (tx) => {
+          await tx.proposal.update({
+            where: { id: proposalId },
+            data: { status: "ACCEPTED", bookingId: id },
+          });
 
-        // Rejeita as outras propostas pendentes
-        await tx.proposal.updateMany({
-          where: {
-            conversationId: proposal.conversationId,
-            id: { not: proposalId },
-            status: "PENDING",
-          },
-          data: { status: "REJECTED" },
-        });
+          await tx.proposal.updateMany({
+            where: {
+              conversationId: proposal.conversationId,
+              id: { not: proposalId },
+              status: "PENDING",
+            },
+            data: { status: "REJECTED" },
+          });
 
-        // Sem o módulo financeiro, o aceite confirma o início do serviço.
-        await tx.booking.update({
-          where: { id },
-          data: { status: "IN_PROGRESS" },
+          await tx.booking.update({
+            where: { id },
+            data: { status: "CONFIRMED" },
+          });
         });
-      });
+      } catch (error) {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          error.code === "P2002"
+        ) {
+          return reply.code(409).send({
+            error: "Esta data acabou de ser ocupada. Escolha outra data.",
+          });
+        }
+        throw error;
+      }
 
       return reply.send({
-        message: "Proposta aceita. O serviço está em andamento.",
+        message: "Proposta aceita. O serviço está confirmado.",
       });
+    },
+  );
+
+  // O profissional inicia o serviço confirmado na data combinada.
+  app.patch(
+    "/:id/start",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const userId = (request.user as { id: string }).id;
+      const booking = await prisma.booking.findUnique({ where: { id } });
+
+      if (!booking) {
+        return reply.code(404).send({ error: "Booking não encontrado" });
+      }
+      if (booking.providerId !== userId) {
+        return reply.code(403).send({
+          error: "Apenas o profissional responsável pode iniciar o serviço",
+        });
+      }
+      if (booking.status !== "CONFIRMED") {
+        return reply
+          .code(409)
+          .send({ error: "Este serviço não está confirmado" });
+      }
+      if (booking.startDate > todayUtc()) {
+        return reply.code(409).send({
+          error: "O serviço só pode ser iniciado na data agendada",
+        });
+      }
+
+      await prisma.booking.update({
+        where: { id },
+        data: { status: "IN_PROGRESS" },
+      });
+      return reply.send({ message: "Serviço iniciado" });
     },
   );
 

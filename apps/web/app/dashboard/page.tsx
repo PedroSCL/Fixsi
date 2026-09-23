@@ -15,6 +15,7 @@ import {
   Plus,
   ShieldCheck,
   Star,
+  CalendarCog,
 } from "lucide-react";
 import {
   api,
@@ -51,6 +52,12 @@ export default function DashboardPage() {
   const tiles = [
     ...(professional
       ? [
+          {
+            href: "/dashboard/availability",
+            label: "Minha disponibilidade",
+            text: "Defina dias de atendimento e folgas",
+            icon: CalendarCog,
+          },
           {
             href: "/dashboard/services/new",
             label: "Publicar serviço",

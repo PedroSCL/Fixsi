@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- imagens dos anúncios vêm de URLs cadastradas pelos usuários */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
@@ -15,6 +15,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { api, apiErrorMessage, isUnauthorized } from "../../lib/api";
+import { AvailabilityCalendar } from "../../components/AvailabilityCalendar";
 interface ServiceDetail {
   id: string;
   title: string;
@@ -31,8 +32,7 @@ interface ServiceDetail {
 }
 export default function ServiceDetailPage() {
   const { id } = useParams(),
-    router = useRouter(),
-    dateRef = useRef<HTMLInputElement>(null);
+    router = useRouter();
   const [service, setService] = useState<ServiceDetail | null>(null),
     [loading, setLoading] = useState(true),
     [loadError, setLoadError] = useState(""),
@@ -254,28 +254,18 @@ export default function ServiceDetailPage() {
                 <label className="block text-sm font-extrabold text-[#17233B]">
                   Quando você precisa?
                 </label>
-                <button
-                  type="button"
-                  onClick={() => dateRef.current?.showPicker()}
-                  className="field relative mt-2 flex items-center gap-3 text-left"
-                >
-                  <CalendarDays size={18} className="text-[#F97316]" />
-                  <span className={startDate ? "" : "text-[#7B918D]"}>
-                    {formatted}
-                  </span>
-                  <span className="ml-auto text-xs font-extrabold text-[#F97316]">
-                    Selecionar
-                  </span>
-                  <input
-                    ref={dateRef}
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    min={new Date().toISOString().split("T")[0]}
-                    className="pointer-events-none absolute h-px w-px opacity-0"
-                    tabIndex={-1}
-                  />
-                </button>
+                <div className="mt-2 flex items-center gap-2 text-sm font-bold text-[#F97316]">
+                  <CalendarDays size={18} />
+                  {formatted}
+                </div>
+                <AvailabilityCalendar
+                  professionalId={service.user.id}
+                  selected={startDate}
+                  onSelect={(date) => {
+                    setStartDate(date);
+                    setError("");
+                  }}
+                />
                 {error && (
                   <p
                     role="alert"
