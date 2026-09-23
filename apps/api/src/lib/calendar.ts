@@ -18,11 +18,19 @@ export function formatDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-export function todayUtc(): Date {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+export function todayUtc(now = new Date()): Date {
+  // A agenda é brasileira. Render e outros provedores executam em UTC, que já
+  // está no dia seguinte a partir das 21h em parte do ano no Brasil.
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const value = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
   );
+  return parseDateOnly(`${value.year}-${value.month}-${value.day}`);
 }
 
 export function addUtcDays(date: Date, days: number): Date {
