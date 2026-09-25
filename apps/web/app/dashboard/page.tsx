@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Star,
   CalendarCog,
+  Trash2,
 } from "lucide-react";
 import {
   api,
@@ -151,6 +152,12 @@ export default function DashboardPage() {
             >
               <LogOut size={18} /> Sair
             </button>
+            <Link
+              href="/profile/delete"
+              className="flex items-center gap-3 rounded-lg px-4 py-3 font-bold text-red-700 hover:bg-red-50"
+            >
+              <Trash2 size={18} /> Excluir conta
+            </Link>
           </nav>
         </aside>
         <div className="space-y-6">

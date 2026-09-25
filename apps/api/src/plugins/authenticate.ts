@@ -27,6 +27,14 @@ export async function authenticate(
       if (!activeSession) {
         return reply.code(401).send({ error: "Sessão inválida ou revogada" });
       }
+    } else {
+      const user = await prisma.user.findUnique({
+        where: { id: payload.id },
+        select: { id: true },
+      });
+      if (!user) {
+        return reply.code(401).send({ error: "Conta não encontrada" });
+      }
     }
   } catch {
     return reply.code(401).send({ error: "Token inválido ou ausente" });

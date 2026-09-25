@@ -12,6 +12,7 @@ import {
   Pencil,
   Phone,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { api, clearLegacyAuthStorage, notifyAuthChanged } from "../lib/api";
 
@@ -133,6 +134,23 @@ export default function ProfilePage() {
               value="Dados protegidos e acesso autenticado"
             />
           </div>
+        </section>
+      )}
+      {profile && (
+        <section className="mt-8 rounded-xl border border-red-200 bg-white p-6 sm:p-8">
+          <h2 className="text-lg font-extrabold text-[#17233B]">
+            Excluir minha conta
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-[#667085]">
+            Você pode apagar seu cadastro e os dados vinculados a ele. Essa
+            decisão é permanente.
+          </p>
+          <Link
+            href="/profile/delete"
+            className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-300 px-5 py-2 font-bold text-red-700 hover:bg-red-50"
+          >
+            <Trash2 size={17} /> Excluir conta
+          </Link>
         </section>
       )}
     </main>

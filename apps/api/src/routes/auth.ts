@@ -12,6 +12,8 @@ import {
 import { isValidCpf, maskCpf, normalizeCpf } from "../lib/cpf";
 import { isValidBrazilianPhone, normalizePhone } from "../lib/phone";
 import { rolesForAccountType } from "../lib/account-roles";
+import { deleteAccountData } from "../lib/delete-account";
+import { disconnectUserSockets } from "../lib/socket";
 
 const cpfSchema = z
   .string()
@@ -55,6 +57,11 @@ const loginSchema = z.object({
     .email()
     .transform((email) => email.toLowerCase()),
   password: z.string().min(1).max(128),
+});
+
+const deleteAccountSchema = z.object({
+  password: z.string().min(1).max(128),
+  confirmation: z.literal("EXCLUIR"),
 });
 
 const updateProfileSchema = z
@@ -215,6 +222,34 @@ export async function authRoutes(app: FastifyInstance) {
       });
       clearSessionCookies(reply);
 
+      return reply.code(204).send();
+    },
+  );
+
+  app.delete(
+    "/me",
+    {
+      preHandler: [authenticate],
+      config: { rateLimit: { max: 5, timeWindow: "15 minutes" } },
+    },
+    async (request, reply) => {
+      const userId = (request.user as { id: string }).id;
+      const body = deleteAccountSchema.parse(request.body);
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { password: true },
+      });
+
+      if (!user || !(await bcrypt.compare(body.password, user.password))) {
+        return reply.code(403).send({ error: "Senha atual incorreta" });
+      }
+
+      await prisma.$transaction(
+        (tx) => deleteAccountData(tx, userId),
+        { timeout: 30_000 },
+      );
+      disconnectUserSockets(userId);
+      clearSessionCookies(reply);
       return reply.code(204).send();
     },
   );

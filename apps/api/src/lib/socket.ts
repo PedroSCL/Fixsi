@@ -5,6 +5,12 @@ import { prisma } from "./prisma";
 import { getEnvironment } from "../config/env";
 import { ACCESS_COOKIE } from "./session";
 
+let socketServer: SocketServer | null = null;
+
+export function disconnectUserSockets(userId: string) {
+  socketServer?.in(`user:${userId}`).disconnectSockets(true);
+}
+
 export function setupSocket(
   httpServer: HttpServer,
   jwt: { verify: (token: string) => unknown },
@@ -18,6 +24,7 @@ export function setupSocket(
       credentials: true,
     },
   });
+  socketServer = io;
 
   // O navegador envia o cookie HttpOnly durante o handshake. O token explícito
   // permanece aceito temporariamente para clientes antigos durante o rollout.
@@ -48,6 +55,14 @@ export function setupSocket(
         if (!activeSession) {
           return next(new Error("Sessão inválida ou revogada"));
         }
+      } else {
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+          select: { id: true },
+        });
+        if (!user) {
+          return next(new Error("Conta não encontrada"));
+        }
       }
 
       socket.data.userId = decoded.id;
@@ -59,6 +74,7 @@ export function setupSocket(
 
   io.on("connection", (socket) => {
     const userId = socket.data.userId;
+    socket.join(`user:${userId}`);
     console.log(`Usuário conectado: ${userId}`);
 
     // Entrar numa sala de conversa
