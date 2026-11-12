@@ -7,6 +7,7 @@ import {
   CircleDollarSign,
   Drill,
   FileText,
+  ImageIcon,
   ShieldCheck,
   Tag,
 } from "lucide-react";
@@ -32,6 +33,7 @@ export default function NewToolPage() {
     category: "",
     pricePerDay: "",
     usageRules: "",
+    imageUrl: "",
   });
   const update = (field: string, value: string) =>
     setForm((p) => ({ ...p, [field]: value }));
@@ -40,9 +42,11 @@ export default function NewToolPage() {
     setError("");
     setLoading(true);
     try {
+      const { imageUrl, ...tool } = form;
       await api.post("/tools", {
-        ...form,
+        ...tool,
         pricePerDay: Number(form.pricePerDay),
+        images: imageUrl.trim() ? [imageUrl.trim()] : [],
       });
       router.push("/dashboard?success=tool");
     } catch (err: unknown) {
@@ -97,6 +101,31 @@ export default function NewToolPage() {
               className="field mt-2"
               placeholder="Ex.: Furadeira de impacto"
             />
+          </label>
+          <label className="block text-sm font-extrabold text-[#17233B]">
+            <span className="flex items-center gap-2">
+              <ImageIcon size={16} className="text-[#F97316]" /> Imagem do anúncio <span className="font-semibold text-[#667085]">(opcional)</span>
+            </span>
+            <input
+              type="url"
+              value={form.imageUrl}
+              onChange={(e) => update("imageUrl", e.target.value)}
+              className="field mt-2"
+              placeholder="https://exemplo.com/minha-imagem.jpg"
+            />
+            <span className="mt-1.5 block text-xs font-medium text-[#667085]">
+              Cole o link de uma imagem. Sem imagem, será usada a ilustração padrão da categoria.
+            </span>
+            {form.imageUrl.trim() && (
+              <img
+                src={form.imageUrl}
+                alt="Prévia do anúncio"
+                className="mt-3 h-36 w-full rounded-xl border border-[#DED9D1] object-cover"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            )}
           </label>
           <label className="block text-sm font-extrabold text-[#17233B]">
             <span className="flex items-center gap-2">
