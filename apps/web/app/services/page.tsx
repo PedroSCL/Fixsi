@@ -12,7 +12,7 @@ import {
   Star,
 } from "lucide-react";
 import axios from "axios";
-import { api, apiErrorMessage, Service } from "../lib/api";
+import { api, apiErrorMessage, formatCurrency, Service } from "../lib/api";
 
 const CATEGORIES = [
   "Todos",
@@ -180,9 +180,11 @@ function ServicesContent() {
             </div>
             <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {services.map((service) => (
-                <article
+                <Link
                   key={service.id}
-                  className="group overflow-hidden rounded-xl border-2 border-[#DED9D1] bg-white shadow-[4px_5px_0_rgba(32,54,92,.07)] hover:-translate-y-1 hover:border-[#F47A00]"
+                  href={`/services/${service.id}`}
+                  className="group block overflow-hidden rounded-xl border-2 border-[#DED9D1] bg-white shadow-[4px_5px_0_rgba(32,54,92,.07)] transition hover:-translate-y-1 hover:border-[#F47A00] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#F97316]/25"
+                  aria-label={`Ver serviço ${service.title}`}
                 >
                   <div className="relative h-44 overflow-hidden bg-[#FFF1E8]">
                     <img
@@ -210,25 +212,29 @@ function ServicesContent() {
                     <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#667085]">
                       {service.description}
                     </p>
-                    <div className="mt-4 flex items-center justify-between border-t border-[#EEEAE4] pt-4">
-                      <span>
-                        <small className="block text-[#7B918D]">
-                          Profissional
-                        </small>
-                        <strong className="text-sm text-[#17233B]">
-                          {service.user.name}
-                        </strong>
-                      </span>
-                      <Link
-                        href={`/services/${service.id}`}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF1E8] text-[#F97316] hover:bg-[#F97316] hover:text-white"
-                        aria-label={`Ver ${service.title}`}
-                      >
+                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#EEEAE4] pt-4">
+                      <div className="flex min-w-0 flex-wrap gap-x-5 gap-y-2">
+                        <span>
+                          <small className="block text-[#7B918D]">A partir de</small>
+                          <strong className="text-sm text-[#17233B]">
+                            {service.priceFrom !== null
+                              ? formatCurrency(service.priceFrom)
+                              : "A combinar"}
+                          </strong>
+                        </span>
+                        <span className="min-w-0">
+                          <small className="block text-[#7B918D]">Profissional</small>
+                          <strong className="block truncate text-sm text-[#17233B]">
+                            {service.user.name}
+                          </strong>
+                        </span>
+                      </div>
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF1E8] text-[#F97316] transition group-hover:bg-[#F97316] group-hover:text-white">
                         <ArrowRight size={18} />
-                      </Link>
+                      </span>
                     </div>
                   </div>
-                </article>
+                </Link>
               ))}
             </div>
           </>
