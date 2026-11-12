@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { io, Socket } from "socket.io-client";
 import {
@@ -45,7 +45,6 @@ interface Booking {
 }
 export default function MessagesPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [bookings, setBookings] = useState<Booking[]>([]),
     [selected, setSelected] = useState<Conversation | null>(null),
     [message, setMessage] = useState(""),
@@ -96,7 +95,9 @@ export default function MessagesPage() {
   }, [selected?.id]);
 
   useEffect(() => {
-    const conversationId = searchParams.get("conversation");
+    const conversationId = new URLSearchParams(window.location.search).get(
+      "conversation",
+    );
     api
       .get("/auth/me")
       .then(async ({ data }) => {
@@ -114,7 +115,7 @@ export default function MessagesPage() {
         );
         setLoading(false);
       });
-  }, [router, searchParams]);
+  }, [router]);
   useEffect(() => {
     end.current?.scrollIntoView({ behavior: "smooth" });
   }, [selected?.messages]);
