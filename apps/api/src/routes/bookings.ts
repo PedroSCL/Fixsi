@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
+import { broadcastConversationProposalUpdate } from "../lib/socket";
 import { authenticate } from "../plugins/authenticate";
 import {
   DEFAULT_WEEKDAYS,
@@ -400,6 +401,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
         throw error;
       }
 
+      broadcastConversationProposalUpdate(proposal.conversationId);
       return reply.code(201).send({ proposal });
     },
   );
@@ -430,6 +432,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
       if (rejected.count !== 1) {
         return reply.code(409).send({ error: "Esta proposta não está mais disponível" });
       }
+      broadcastConversationProposalUpdate(proposal.conversationId);
       return reply.send({ message: "Proposta recusada" });
     },
   );
@@ -539,6 +542,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
         throw error;
       }
 
+      broadcastConversationProposalUpdate(proposal.conversationId);
       return reply.send({
         message: "Proposta aceita. O serviço está confirmado.",
       });

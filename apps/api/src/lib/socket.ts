@@ -21,6 +21,12 @@ export function broadcastConversationMessage(
   socketServer?.to(conversationId).emit("new_message", message);
 }
 
+// Propostas também mudam o estado da conversa. O cliente busca o resumo
+// atualizado para refletir aceite, recusa ou contraproposta sem recarregar.
+export function broadcastConversationProposalUpdate(conversationId: string) {
+  socketServer?.to(conversationId).emit("proposal_updated", { conversationId });
+}
+
 export function setupSocket(
   httpServer: HttpServer,
   jwt: { verify: (token: string) => unknown },

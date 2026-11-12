@@ -116,6 +116,27 @@ export default function MessagesPage() {
           },
         );
 
+        socket.on(
+          "proposal_updated",
+          ({ conversationId }: { conversationId: string }) => {
+            if (selected?.id !== conversationId) return;
+
+            void api
+              .get(`/conversations/${conversationId}`)
+              .then(({ data }) => {
+                if (!disposed) {
+                  setSelected((current) =>
+                    current?.id === conversationId ? data.conversation : current,
+                  );
+                }
+              })
+              .catch(() => {
+                // A alteração local continua visível; a próxima abertura do
+                // chat fará uma nova sincronização caso esta consulta falhe.
+              });
+          },
+        );
+
         if (selected?.id) socket.emit("join_conversation", selected.id);
       } catch {
         // O envio HTTP continua funcionando como alternativa se a conexão
