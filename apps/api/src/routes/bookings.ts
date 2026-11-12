@@ -57,6 +57,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
 
     // Valida se o serviço ou ferramenta existe e está disponível
     let providerId = "";
+    let listingTitle = "seu anúncio";
     if (body.serviceId) {
       const service = await prisma.service.findUnique({
         where: { id: body.serviceId },
@@ -73,6 +74,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
           .send({ error: "Você não pode contratar seu próprio serviço" });
       }
       providerId = service.userId;
+      listingTitle = service.title;
 
       const [rules, exception, occupied] = await Promise.all([
         prisma.professionalAvailability.findMany({
@@ -122,6 +124,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
           .send({ error: "Você não pode alugar sua própria ferramenta" });
       }
       providerId = tool.userId;
+      listingTitle = tool.title;
     }
 
     // Cria o Booking e a Conversation numa transação
@@ -139,8 +142,18 @@ export async function bookingsRoutes(app: FastifyInstance) {
         },
       });
 
-      await tx.conversation.create({
+      const conversation = await tx.conversation.create({
         data: { bookingId: newBooking.id },
+      });
+
+      // O pedido já começa com um contexto claro no chat para que o
+      // profissional seja avisado e os dois possam seguir a negociação.
+      await tx.message.create({
+        data: {
+          content: `Olá! Enviei uma solicitação para ${listingTitle}. Podemos combinar os detalhes?`,
+          conversationId: conversation.id,
+          senderId: clientId,
+        },
       });
 
       return newBooking;

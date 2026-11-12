@@ -39,6 +39,7 @@ export default function ServiceDetailPage() {
     [booking, setBooking] = useState(false),
     [startDate, setStartDate] = useState(""),
     [success, setSuccess] = useState(false),
+    [conversationId, setConversationId] = useState(""),
     [error, setError] = useState("");
   const loadService = useCallback(async () => {
     setLoading(true);
@@ -71,7 +72,8 @@ export default function ServiceDetailPage() {
     setBooking(true);
     setError("");
     try {
-      await api.post("/bookings", { serviceId: id, startDate });
+      const { data } = await api.post("/bookings", { serviceId: id, startDate });
+      setConversationId(data.booking?.conversation?.id || "");
       setSuccess(true);
     } catch (err: unknown) {
       if (isUnauthorized(err)) {
@@ -243,10 +245,14 @@ export default function ServiceDetailPage() {
                   Agora converse com o profissional e combine os detalhes.
                 </p>
                 <Link
-                  href="/dashboard/messages"
+                  href={
+                    conversationId
+                      ? `/dashboard/messages?conversation=${conversationId}`
+                      : "/dashboard/messages"
+                  }
                   className="btn-primary mt-5 w-full"
                 >
-                  <MessageCircle size={17} /> Abrir mensagens
+                  <MessageCircle size={17} /> Abrir conversa
                 </Link>
               </div>
             ) : (
