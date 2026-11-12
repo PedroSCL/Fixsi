@@ -217,7 +217,14 @@ export default function MessagesPage() {
           content: message.trim(),
         })
       ).data.message;
-      setSelected((p) => (p ? { ...p, messages: [...p.messages, sent] } : p));
+      // A mesma mensagem também pode chegar pelo WebSocket antes da resposta
+      // HTTP. Mantemos uma única cópia pelo identificador persistido.
+      setSelected((current) => {
+        if (!current || current.messages.some((item) => item.id === sent.id)) {
+          return current;
+        }
+        return { ...current, messages: [...current.messages, sent] };
+      });
       setMessage("");
     } catch (err) {
       console.error(err);
