@@ -14,6 +14,9 @@ import { isValidBrazilianPhone, normalizePhone } from "../lib/phone";
 import { rolesForAccountType } from "../lib/account-roles";
 import { deleteAccountData } from "../lib/delete-account";
 import { disconnectUserSockets } from "../lib/socket";
+import { createHash, randomBytes } from "node:crypto";
+import { getEnvironment } from "../config/env";
+import { sendPasswordResetEmail } from "../lib/password-reset-email";
 
 const cpfSchema = z
   .string()
@@ -28,6 +31,17 @@ const phoneSchema = z
     "Informe um telefone brasileiro válido com DDD",
   );
 
+const passwordSchema = z
+  .string()
+  .max(128, "Senha deve ter no máximo 128 caracteres")
+  .min(8, "Senha deve ter no mínimo 8 caracteres")
+  .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
+  .regex(/[0-9]/, "Senha deve conter pelo menos um número")
+  .regex(
+    /[^a-zA-Z0-9]/,
+    "Senha deve conter pelo menos um caractere especial",
+  );
+
 const registerSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z
@@ -35,16 +49,7 @@ const registerSchema = z.object({
     .trim()
     .email()
     .transform((email) => email.toLowerCase()),
-  password: z
-    .string()
-    .max(128, "Senha deve ter no máximo 128 caracteres")
-    .min(8, "Senha deve ter no mínimo 8 caracteres")
-    .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
-    .regex(/[0-9]/, "Senha deve conter pelo menos um número")
-    .regex(
-      /[^a-zA-Z0-9]/,
-      "Senha deve conter pelo menos um caractere especial",
-    ),
+  password: passwordSchema,
   phone: phoneSchema,
   cpf: cpfSchema,
   role: z.enum(["CLIENT", "PROFESSIONAL"]).default("CLIENT"),
@@ -57,6 +62,19 @@ const loginSchema = z.object({
     .email()
     .transform((email) => email.toLowerCase()),
   password: z.string().min(1).max(128),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email()
+    .transform((email) => email.toLowerCase()),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(32).max(256),
+  password: passwordSchema,
 });
 
 const deleteAccountSchema = z.object({
@@ -86,6 +104,103 @@ const updateProfileSchema = z
   });
 
 export async function authRoutes(app: FastifyInstance) {
+  // A resposta é a mesma para e-mails cadastrados ou não, para não revelar
+  // quais endereços possuem conta na plataforma.
+  app.post(
+    "/forgot-password",
+    { config: { rateLimit: { max: 3, timeWindow: "15 minutes" } } },
+    async (request, reply) => {
+      const { email } = forgotPasswordSchema.parse(request.body);
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, name: true, email: true },
+      });
+
+      if (user) {
+        const rawToken = randomBytes(32).toString("base64url");
+        const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+        await prisma.$transaction(async (tx) => {
+          await tx.passwordResetToken.updateMany({
+            where: { userId: user.id, usedAt: null },
+            data: { usedAt: new Date() },
+          });
+          await tx.passwordResetToken.create({
+            data: { userId: user.id, tokenHash, expiresAt },
+          });
+        });
+
+        const { FRONTEND_URL } = getEnvironment();
+        const resetUrl = new URL("/reset-password", FRONTEND_URL);
+        resetUrl.searchParams.set("token", rawToken);
+        await sendPasswordResetEmail({
+          email: user.email,
+          name: user.name,
+          resetUrl: resetUrl.toString(),
+        });
+      }
+
+      return reply.send({
+        message:
+          "Se houver uma conta com este e-mail, enviaremos as instruções de recuperação.",
+      });
+    },
+  );
+
+  app.post(
+    "/reset-password",
+    { config: { rateLimit: { max: 5, timeWindow: "15 minutes" } } },
+    async (request, reply) => {
+      const { token, password } = resetPasswordSchema.parse(request.body);
+      const tokenHash = createHash("sha256").update(token).digest("hex");
+      const now = new Date();
+      const resetToken = await prisma.passwordResetToken.findFirst({
+        where: { tokenHash, usedAt: null, expiresAt: { gt: now } },
+        select: { id: true, userId: true },
+      });
+
+      if (!resetToken) {
+        return reply.code(400).send({
+          error: "Este link é inválido ou expirou. Solicite uma nova recuperação.",
+        });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 12);
+      const consumed = await prisma.$transaction(async (tx) => {
+        const result = await tx.passwordResetToken.updateMany({
+          where: { id: resetToken.id, usedAt: null, expiresAt: { gt: now } },
+          data: { usedAt: now },
+        });
+        if (result.count !== 1) return false;
+
+        await tx.user.update({
+          where: { id: resetToken.userId },
+          data: { password: passwordHash },
+        });
+        await tx.passwordResetToken.updateMany({
+          where: { userId: resetToken.userId, usedAt: null },
+          data: { usedAt: now },
+        });
+        await tx.session.updateMany({
+          where: { userId: resetToken.userId, revokedAt: null },
+          data: { revokedAt: now },
+        });
+        return true;
+      });
+
+      if (!consumed) {
+        return reply.code(400).send({
+          error: "Este link já foi utilizado ou expirou. Solicite uma nova recuperação.",
+        });
+      }
+
+      disconnectUserSockets(resetToken.userId);
+      clearSessionCookies(reply);
+      return reply.send({ message: "Senha alterada com sucesso." });
+    },
+  );
+
   // Cadastro
   app.post(
     "/register",

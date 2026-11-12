@@ -86,6 +86,7 @@ model User {
   proposals            Proposal[]            @relation("ProposalSender")
   reportsMade          Report[]              @relation("ReportsMade")
   sessions             Session[]
+  passwordResetTokens  PasswordResetToken[]
 
   @@index([email])
   @@index([cpf])
@@ -112,6 +113,22 @@ model Session {
   @@index([userId])
   @@index([expiresAt])
   @@index([revokedAt])
+}
+
+// O valor enviado por e-mail nunca é salvo em texto puro: armazenamos apenas
+// seu hash e aceitamos o token uma única vez dentro do prazo definido.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
 }
 
 model UserRole {
