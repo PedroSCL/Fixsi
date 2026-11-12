@@ -28,6 +28,7 @@ export default function ToolDetailPage() {
     [endDate, setEndDate] = useState(""),
     [sending, setSending] = useState(false),
     [success, setSuccess] = useState(false),
+    [conversationId, setConversationId] = useState(""),
     [error, setError] = useState("");
   useEffect(() => {
     (async () => {
@@ -52,7 +53,8 @@ export default function ToolDetailPage() {
     setSending(true);
     setError("");
     try {
-      await api.post("/bookings", { toolId: id, startDate, endDate });
+      const { data } = await api.post("/bookings", { toolId: id, startDate, endDate });
+      setConversationId(data.booking?.conversation?.id || "");
       setSuccess(true);
     } catch (err: unknown) {
       if (isUnauthorized(err)) {
@@ -143,10 +145,10 @@ export default function ToolDetailPage() {
                 </span>
                 <h2 className="mt-3 font-extrabold">Solicitação enviada</h2>
                 <Link
-                  href="/dashboard/messages"
+                  href={conversationId ? `/dashboard/messages?conversation=${conversationId}` : "/dashboard/messages"}
                   className="btn-primary mt-4 w-full"
                 >
-                  <MessageCircle size={17} /> Abrir mensagens
+                  <MessageCircle size={17} /> Abrir conversa
                 </Link>
               </div>
             ) : (

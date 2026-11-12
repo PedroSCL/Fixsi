@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -44,6 +44,7 @@ interface Booking {
 }
 export default function MessagesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [bookings, setBookings] = useState<Booking[]>([]),
     [selected, setSelected] = useState<Conversation | null>(null),
     [message, setMessage] = useState(""),
@@ -56,25 +57,30 @@ export default function MessagesPage() {
     [proposalSuccess, setProposalSuccess] = useState(""),
     [acceptingProposalId, setAcceptingProposalId] = useState(""),
     [userId, setUserId] = useState(""),
+    [loadError, setLoadError] = useState(""),
     [loading, setLoading] = useState(true);
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    const conversationId = searchParams.get("conversation");
     api
       .get("/auth/me")
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         setUserId(data.user.id);
-        return load();
+        await load();
+        if (conversationId) await open(conversationId);
       })
       .catch(() => router.replace("/login"));
-  }, [router]);
+  }, [router, searchParams]);
   useEffect(() => {
     end.current?.scrollIntoView({ behavior: "smooth" });
   }, [selected?.messages]);
   async function load() {
     try {
+      setLoadError("");
       setBookings((await api.get("/bookings")).data.bookings);
     } catch (err) {
       console.error(err);
+      setLoadError(apiErrorMessage(err, "Não foi possível carregar suas conversas."));
     } finally {
       setLoading(false);
     }
@@ -241,6 +247,18 @@ export default function MessagesPage() {
             </p>
           </div>
           <div className="flex-1 overflow-y-auto">
+            {loadError && (
+              <div className="m-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+                <p>{loadError}</p>
+                <button
+                  type="button"
+                  onClick={() => void load()}
+                  className="mt-2 font-extrabold underline"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            )}
             {bookings.length === 0 ? (
               <div className="p-7 text-center">
                 <MessageCircle className="mx-auto text-[#F97316]" size={28} />

@@ -347,7 +347,7 @@ export default function BookingsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Link
-                      href="/dashboard/messages"
+                      href={`/dashboard/messages?conversation=${b.conversation.id}`}
                       className="btn-secondary min-h-10 px-3 py-2"
                       title="Abrir conversa"
                     >
