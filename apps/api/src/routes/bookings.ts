@@ -17,10 +17,6 @@ const createBookingSchema = z
     toolId: z.string().optional(),
     startDate: z.string(),
     endDate: z.string().optional(),
-    requestDescription: z.string().trim().min(10).max(2_000),
-    location: z.string().trim().min(2).max(120),
-    urgency: z.enum(["FLEXIBLE", "SOON", "URGENT"]).default("FLEXIBLE"),
-    budgetReference: z.number().positive().max(1_000_000).optional(),
   })
   .refine(
     (data) =>
@@ -30,9 +26,16 @@ const createBookingSchema = z
 
 const createProposalSchema = z.object({
   amount: z.number().positive().max(1_000_000),
-  description: z.string().trim().max(240).optional(),
-  expiresAt: z.string().optional(),
+  description: z.string().trim().min(3).max(1_000),
+  materialsIncluded: z.boolean().default(false),
+  estimatedDuration: z.string().trim().max(120).optional(),
+  expiresAt: z
+    .string()
+    .date()
+    .optional(),
 });
+
+const MAX_PROPOSAL_ROUNDS = 6;
 
 export async function bookingsRoutes(app: FastifyInstance) {
   // Criar booking (cliente autenticado)
@@ -59,7 +62,6 @@ export async function bookingsRoutes(app: FastifyInstance) {
 
     // Valida se o serviço ou ferramenta existe e está disponível
     let providerId = "";
-    let listingTitle = "seu anúncio";
     if (body.serviceId) {
       const service = await prisma.service.findUnique({
         where: { id: body.serviceId },
@@ -76,7 +78,6 @@ export async function bookingsRoutes(app: FastifyInstance) {
           .send({ error: "Você não pode contratar seu próprio serviço" });
       }
       providerId = service.userId;
-      listingTitle = service.title;
 
       const [rules, exception, occupied] = await Promise.all([
         prisma.professionalAvailability.findMany({
@@ -126,7 +127,6 @@ export async function bookingsRoutes(app: FastifyInstance) {
           .send({ error: "Você não pode alugar sua própria ferramenta" });
       }
       providerId = tool.userId;
-      listingTitle = tool.title;
     }
 
     // Cria o Booking e a Conversation numa transação
@@ -140,10 +140,6 @@ export async function bookingsRoutes(app: FastifyInstance) {
           toolId: body.toolId,
           startDate,
           endDate,
-          requestDescription: body.requestDescription,
-          location: body.location,
-          urgency: body.urgency,
-          budgetReference: body.budgetReference,
           status: "PENDING",
         },
       });
@@ -154,7 +150,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
 
       await tx.message.create({
         data: {
-          content: `Olá! Enviei uma solicitação para ${listingTitle}. ${body.requestDescription}`,
+          content: `Foi solicitado o serviço para o dia ${startDate.toLocaleDateString("pt-BR", { timeZone: "UTC" })}.`,
           conversationId: conversation.id,
           senderId: clientId,
         },
@@ -261,7 +257,8 @@ export async function bookingsRoutes(app: FastifyInstance) {
     return reply.send({ booking });
   });
 
-  // Profissional envia proposta de orçamento
+  // A negociação é linear: o profissional abre a primeira oferta e cada
+  // contraproposta substitui a oferta pendente anterior.
   app.post(
     "/:id/proposals",
     { preHandler: [authenticate] },
@@ -274,8 +271,6 @@ export async function bookingsRoutes(app: FastifyInstance) {
         where: { id },
         include: {
           conversation: true,
-          service: { select: { userId: true } },
-          tool: { select: { userId: true } },
         },
       });
 
@@ -283,9 +278,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
         return reply.code(404).send({ error: "Booking não encontrado" });
       }
 
-      // Só o profissional dono do anúncio pode enviar proposta
-      const providerId = booking.service?.userId || booking.tool?.userId;
-      if (providerId !== userId) {
+      if (booking.clientId !== userId && booking.providerId !== userId) {
         return reply.code(403).send({ error: "Sem permissão" });
       }
 
@@ -299,22 +292,141 @@ export async function bookingsRoutes(app: FastifyInstance) {
         });
       }
 
-      const proposal = await prisma.proposal.create({
-        data: {
-          amount: body.amount,
-          description: body.description,
-          expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+      const expired = await prisma.proposal.findFirst({
+        where: {
           conversationId: booking.conversation.id,
-          senderId: userId,
           status: "PENDING",
+          expiresAt: { lt: new Date() },
         },
+        select: { id: true },
       });
+      if (expired) {
+        await prisma.proposal.updateMany({
+          where: { id: expired.id, status: "PENDING" },
+          data: { status: "EXPIRED" },
+        });
+        return reply.code(409).send({
+          error: "A proposta anterior expirou. O profissional pode enviar uma nova oferta.",
+        });
+      }
+
+      let proposal;
+      try {
+        proposal = await prisma.$transaction(async (tx) => {
+          const pending = await tx.proposal.findFirst({
+            where: { conversationId: booking.conversation!.id, status: "PENDING" },
+            orderBy: { createdAt: "desc" },
+          });
+
+          if (!pending) {
+            if (booking.providerId !== userId) {
+              throw Object.assign(
+                new Error("Aguarde o profissional enviar uma proposta"),
+                { statusCode: 403 },
+              );
+            }
+            return tx.proposal.create({
+              data: {
+                amount: body.amount,
+                description: body.description,
+                materialsIncluded: body.materialsIncluded,
+                estimatedDuration: body.estimatedDuration || null,
+                expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+                conversationId: booking.conversation!.id,
+                senderId: userId,
+                status: "PENDING",
+                round: 1,
+              },
+            });
+          }
+
+          if (pending.senderId === userId) {
+            throw Object.assign(
+              new Error("Aguarde a resposta à sua proposta antes de enviar outra"),
+              { statusCode: 409 },
+            );
+          }
+          if (pending.round >= MAX_PROPOSAL_ROUNDS) {
+            throw Object.assign(
+              new Error(`Limite de ${MAX_PROPOSAL_ROUNDS} rodadas de negociação atingido`),
+              { statusCode: 409 },
+            );
+          }
+
+          const superseded = await tx.proposal.updateMany({
+            where: { id: pending.id, status: "PENDING" },
+            data: { status: "SUPERSEDED" },
+          });
+          if (superseded.count !== 1) {
+            throw Object.assign(new Error("A proposta já recebeu uma resposta"), {
+              statusCode: 409,
+            });
+          }
+
+          return tx.proposal.create({
+            data: {
+              amount: body.amount,
+              description: body.description,
+              materialsIncluded: body.materialsIncluded,
+              estimatedDuration: body.estimatedDuration || null,
+              expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+              conversationId: booking.conversation!.id,
+              senderId: userId,
+              status: "PENDING",
+              round: pending.round + 1,
+              replacesProposalId: pending.id,
+            },
+          });
+        });
+      } catch (error) {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          error.code === "P2002"
+        ) {
+          return reply.code(409).send({
+            error: "Já existe uma proposta aguardando resposta nesta conversa",
+          });
+        }
+        throw error;
+      }
 
       return reply.code(201).send({ proposal });
     },
   );
 
-  // Cliente aceita proposta
+  app.patch(
+    "/:id/proposals/:proposalId/reject",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const { id, proposalId } = request.params as { id: string; proposalId: string };
+      const userId = (request.user as { id: string }).id;
+      const booking = await prisma.booking.findUnique({
+        where: { id },
+        include: { conversation: { include: { proposals: { where: { id: proposalId } } } } },
+      });
+      if (!booking) return reply.code(404).send({ error: "Booking não encontrado" });
+      if (booking.clientId !== userId && booking.providerId !== userId) {
+        return reply.code(403).send({ error: "Sem permissão" });
+      }
+      const proposal = booking.conversation?.proposals[0];
+      if (!proposal) return reply.code(404).send({ error: "Proposta não encontrada" });
+      if (proposal.senderId === userId) {
+        return reply.code(403).send({ error: "Você não pode recusar sua própria proposta" });
+      }
+      const rejected = await prisma.proposal.updateMany({
+        where: { id: proposal.id, status: "PENDING" },
+        data: { status: "REJECTED" },
+      });
+      if (rejected.count !== 1) {
+        return reply.code(409).send({ error: "Esta proposta não está mais disponível" });
+      }
+      return reply.send({ message: "Proposta recusada" });
+    },
+  );
+
+  // Quem recebeu a proposta pode aceitá-la.
   app.patch(
     "/:id/proposals/:proposalId/accept",
     { preHandler: [authenticate] },
@@ -334,8 +446,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
         return reply.code(404).send({ error: "Booking não encontrado" });
       }
 
-      // Só o cliente pode aceitar
-      if (booking.clientId !== userId) {
+      if (booking.clientId !== userId && booking.providerId !== userId) {
         return reply.code(403).send({ error: "Sem permissão" });
       }
 
@@ -345,6 +456,10 @@ export async function bookingsRoutes(app: FastifyInstance) {
 
       if (!proposal) {
         return reply.code(404).send({ error: "Proposta não encontrada" });
+      }
+
+      if (proposal.senderId === userId) {
+        return reply.code(403).send({ error: "Você não pode aceitar sua própria proposta" });
       }
 
       if (
@@ -360,9 +475,13 @@ export async function bookingsRoutes(app: FastifyInstance) {
         });
       }
 
-      if (proposal.status !== "PENDING") {
+      if (
+        proposal.status !== "PENDING" ||
+        booking.status !== "PENDING" ||
+        (proposal.expiresAt && proposal.expiresAt <= new Date())
+      ) {
         return reply
-          .code(400)
+          .code(409)
           .send({ error: "Proposta não está mais disponível" });
       }
 
@@ -370,10 +489,19 @@ export async function bookingsRoutes(app: FastifyInstance) {
         // O índice parcial no banco é a última proteção contra duas confirmações
         // simultâneas para o mesmo profissional e a mesma data.
         await prisma.$transaction(async (tx) => {
-          await tx.proposal.update({
-            where: { id: proposalId },
+          const accepted = await tx.proposal.updateMany({
+            where: {
+              id: proposalId,
+              status: "PENDING",
+              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+            },
             data: { status: "ACCEPTED", bookingId: id },
           });
+          if (accepted.count !== 1) {
+            throw Object.assign(new Error("Esta proposta já recebeu uma resposta"), {
+              statusCode: 409,
+            });
+          }
 
           await tx.proposal.updateMany({
             where: {

@@ -39,6 +39,7 @@ enum ProposalStatus {
   PENDING
   ACCEPTED
   REJECTED
+  SUPERSEDED
   EXPIRED
 }
 
@@ -293,7 +294,10 @@ model Proposal {
   id          String         @id @default(cuid())
   amount      Decimal
   description String?
+  materialsIncluded Boolean @default(false)
+  estimatedDuration String?
   status      ProposalStatus @default(PENDING)
+  round       Int            @default(1)
   expiresAt   DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -307,7 +311,12 @@ model Proposal {
   bookingId String?  @unique
   booking   Booking? @relation("AcceptedProposal", fields: [bookingId], references: [id])
 
+  replacesProposalId String?   @unique
+  replacesProposal   Proposal? @relation("ProposalReplacements", fields: [replacesProposalId], references: [id])
+  replacedBy         Proposal? @relation("ProposalReplacements")
+
   @@index([conversationId])
+  @@index([conversationId, status])
 }
 
 // ─── Avaliação ────────────────────────────────────────────────────────────────

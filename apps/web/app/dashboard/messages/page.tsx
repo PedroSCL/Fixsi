@@ -24,10 +24,6 @@ interface Conversation {
     id: string;
     status: string;
     clientId: string;
-    requestDescription?: string | null;
-    location?: string | null;
-    urgency?: "FLEXIBLE" | "SOON" | "URGENT";
-    budgetReference?: number | null;
     service?: { title: string; userId: string };
     tool?: { title: string; userId: string };
   };
@@ -38,6 +34,10 @@ interface Conversation {
     description?: string;
     status: string;
     senderId: string;
+    materialsIncluded: boolean;
+    estimatedDuration?: string | null;
+    expiresAt?: string | null;
+    round: number;
   }[];
 }
 interface Booking {
@@ -56,10 +56,14 @@ export default function MessagesPage() {
     [proposalOpen, setProposalOpen] = useState(false),
     [proposalAmount, setProposalAmount] = useState(""),
     [proposalDescription, setProposalDescription] = useState(""),
+    [proposalDuration, setProposalDuration] = useState(""),
+    [proposalExpiresAt, setProposalExpiresAt] = useState(""),
+    [materialsIncluded, setMaterialsIncluded] = useState(false),
     [proposalSending, setProposalSending] = useState(false),
     [proposalError, setProposalError] = useState(""),
     [proposalSuccess, setProposalSuccess] = useState(""),
     [acceptingProposalId, setAcceptingProposalId] = useState(""),
+    [rejectingProposalId, setRejectingProposalId] = useState(""),
     [userId, setUserId] = useState(""),
     [realtimeConnected, setRealtimeConnected] = useState(false),
     [loadError, setLoadError] = useState(""),
@@ -173,6 +177,9 @@ export default function MessagesPage() {
       setProposalOpen(false);
       setProposalAmount("");
       setProposalDescription("");
+      setProposalDuration("");
+      setProposalExpiresAt("");
+      setMaterialsIncluded(false);
       setProposalError("");
       setProposalSuccess("");
     } catch (err) {
@@ -206,6 +213,10 @@ export default function MessagesPage() {
       setProposalError("Informe um valor maior que zero.");
       return;
     }
+    if (proposalDescription.trim().length < 3) {
+      setProposalError("Descreva o que está incluso na proposta.");
+      return;
+    }
 
     setProposalSending(true);
     setProposalError("");
@@ -215,17 +226,31 @@ export default function MessagesPage() {
         `/bookings/${selected.booking.id}/proposals`,
         {
           amount,
-          description: proposalDescription.trim() || "Proposta de orçamento",
+          description: proposalDescription.trim(),
+          materialsIncluded,
+          estimatedDuration: proposalDuration.trim() || undefined,
+          expiresAt: proposalExpiresAt || undefined,
         },
       );
 
       setSelected((current) =>
         current
-          ? { ...current, proposals: [data.proposal, ...current.proposals] }
+          ? {
+              ...current,
+              proposals: [
+                data.proposal,
+                ...current.proposals.map((item) =>
+                  item.status === "PENDING" ? { ...item, status: "SUPERSEDED" } : item,
+                ),
+              ],
+            }
           : current,
       );
       setProposalAmount("");
       setProposalDescription("");
+      setProposalDuration("");
+      setProposalExpiresAt("");
+      setMaterialsIncluded(false);
       setProposalOpen(false);
       setProposalSuccess("Proposta enviada com sucesso.");
     } catch (err: unknown) {
@@ -235,6 +260,18 @@ export default function MessagesPage() {
     } finally {
       setProposalSending(false);
     }
+  }
+
+  function openProposalForm() {
+    const active = selected?.proposals.find((item) => item.status === "PENDING");
+    setProposalAmount(active ? Number(active.amount).toFixed(2).replace(".", ",") : "");
+    setProposalDescription(active?.description || "");
+    setProposalDuration(active?.estimatedDuration || "");
+    setMaterialsIncluded(active?.materialsIncluded || false);
+    setProposalExpiresAt("");
+    setProposalError("");
+    setProposalSuccess("");
+    setProposalOpen(true);
   }
 
   async function accept(id: string) {
@@ -285,6 +322,24 @@ export default function MessagesPage() {
       setAcceptingProposalId("");
     }
   }
+  async function reject(id: string) {
+    if (!selected) return;
+    setRejectingProposalId(id);
+    setProposalError("");
+    try {
+      await api.patch(`/bookings/${selected.booking.id}/proposals/${id}/reject`);
+      setSelected((current) => current ? {
+        ...current,
+        proposals: current.proposals.map((item) => item.id === id ? { ...item, status: "REJECTED" } : item),
+      } : current);
+      setProposalSuccess("Proposta recusada.");
+      void load();
+    } catch (err: unknown) {
+      setProposalError(apiErrorMessage(err, "Não foi possível recusar a proposta."));
+    } finally {
+      setRejectingProposalId("");
+    }
+  }
   const title = (b: Booking) => b.service?.title || b.tool?.title || "Conversa";
   const status = (value: string) =>
     ({
@@ -297,6 +352,12 @@ export default function MessagesPage() {
   const isProvider =
     selected?.booking.service?.userId === userId ||
     selected?.booking.tool?.userId === userId;
+  const activeProposal = selected?.proposals.find((proposal) => proposal.status === "PENDING");
+  const canCreateProposal = Boolean(
+    selected?.booking.status === "PENDING" &&
+      ((!activeProposal && isProvider) ||
+        (activeProposal && activeProposal.senderId !== userId)),
+  );
   if (loading)
     return (
       <div className="flex min-h-96 items-center justify-center text-[#667085]">
@@ -403,56 +464,40 @@ export default function MessagesPage() {
                   </p>
                 </div>
               </div>
-              {selected.proposals
-                .filter((p) => p.status === "PENDING")
-                .map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center gap-3 rounded-xl bg-[#FFF9EA] px-4 py-2"
-                  >
-                    <span>
-                      <small className="block text-[#667085]">Proposta</small>
-                      <strong className="text-[#984B00]">
-                        R$ {Number(p.amount).toFixed(2)}
-                      </strong>
-                    </span>
-                    {p.senderId !== userId && (
-                      <button
-                        onClick={() => accept(p.id)}
-                        disabled={Boolean(acceptingProposalId)}
-                        className="rounded-lg bg-[#F97316] px-3 py-1.5 text-xs font-extrabold text-white"
-                      >
-                        {acceptingProposalId === p.id
-                          ? "Aceitando..."
-                          : "Aceitar"}
+              {activeProposal && (
+                <div className="flex flex-wrap items-center gap-3 rounded-xl bg-[#FFF9EA] px-4 py-2">
+                  <span>
+                    <small className="block text-[#667085]">
+                      {activeProposal.round === 1 ? "Proposta" : `Contraproposta · rodada ${activeProposal.round} de 6`}
+                    </small>
+                    <strong className="text-[#984B00]">R$ {Number(activeProposal.amount).toFixed(2).replace(".", ",")}</strong>
+                  </span>
+                  {activeProposal.senderId === userId ? (
+                    <span className="text-xs font-bold text-[#667085]">Aguardando resposta</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => accept(activeProposal.id)} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg bg-[#F97316] px-3 py-1.5 text-xs font-extrabold text-white">
+                        {acceptingProposalId === activeProposal.id ? "Aceitando..." : "Aceitar"}
                       </button>
-                    )}
-                  </div>
-                ))}
+                      <button onClick={openProposalForm} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg border border-[#EFB67D] bg-white px-3 py-1.5 text-xs font-extrabold text-[#D96500]">Contrapropor</button>
+                      <button onClick={() => reject(activeProposal.id)} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg px-2 py-1.5 text-xs font-bold text-[#B42318] hover:bg-[#FEF0EE]">{rejectingProposalId === activeProposal.id ? "Recusando..." : "Recusar"}</button>
+                    </div>
+                  )}
+                </div>
+              )}
             </header>
             <div className="flex flex-1 flex-col gap-3 overflow-y-auto bg-[#EEF2F7] p-4 sm:p-5">
-              {selected.booking.requestDescription && (
-                <section className="rounded-xl border border-[#F0C79E] bg-[#FFF9F1] p-4 text-sm text-[#475467]">
-                  <p className="font-extrabold text-[#17233B]">Detalhes do pedido</p>
-                  <p className="mt-2 whitespace-pre-wrap leading-6">
-                    {selected.booking.requestDescription}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold">
-                    {selected.booking.location && (
-                      <span>Local: {selected.booking.location}</span>
-                    )}
-                    <span>
-                      Urgência: {({
-                        FLEXIBLE: "Sem urgência",
-                        SOON: "Nos próximos dias",
-                        URGENT: "Urgente",
-                      } as Record<string, string>)[selected.booking.urgency || "FLEXIBLE"]}
-                    </span>
-                    {selected.booking.budgetReference && (
-                      <span>
-                        Referência: R$ {Number(selected.booking.budgetReference).toFixed(2).replace(".", ",")}
-                      </span>
-                    )}
+              {selected.proposals.length > 0 && (
+                <section className="rounded-xl border border-[#E7E2DA] bg-white p-4 text-sm">
+                  <p className="font-extrabold text-[#17233B]">Histórico de propostas</p>
+                  <div className="mt-2 space-y-2">
+                    {[...selected.proposals].reverse().map((item) => (
+                      <div key={item.id} className="border-t border-[#EEEAE4] pt-2 text-[#667085]">
+                        <span className="font-bold text-[#17233B]">{item.senderId === userId ? "Você" : "Outra pessoa"} · R$ {Number(item.amount).toFixed(2).replace(".", ",")}</span>
+                        <span className="ml-2">{({ PENDING: "Pendente", ACCEPTED: "Aceita", REJECTED: "Recusada", SUPERSEDED: "Substituída", EXPIRED: "Expirada" } as Record<string, string>)[item.status] || item.status}</span>
+                        <p className="mt-1">{item.description}</p>
+                      </div>
+                    ))}
                   </div>
                 </section>
               )}
@@ -505,7 +550,7 @@ export default function MessagesPage() {
                   <span>{proposalError || proposalSuccess}</span>
                 </div>
               )}
-              {proposalOpen && isProvider && (
+              {proposalOpen && canCreateProposal && (
                 <form
                   onSubmit={proposal}
                   className="mb-3 rounded-2xl border border-[#F4C99F] bg-[#FFF9F3] p-4"
@@ -514,10 +559,10 @@ export default function MessagesPage() {
                     <div>
                       <p className="flex items-center gap-2 text-sm font-extrabold text-[#17233B]">
                         <BadgeDollarSign size={18} className="text-[#F97316]" />
-                        Nova proposta
+                        {activeProposal ? "Enviar contraproposta" : "Nova proposta"}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-[#667085]">
-                        Informe o valor combinado com o cliente.
+                        {activeProposal ? "A nova oferta substitui a proposta pendente anterior." : "Detalhe o valor, o prazo e o que está incluso."}
                       </p>
                     </div>
                     <button
@@ -553,25 +598,38 @@ export default function MessagesPage() {
                     </label>
                     <label className="block">
                       <span className="mb-1.5 block text-xs font-bold text-[#344054]">
-                        Detalhes (opcional)
+                        Escopo e observações
                       </span>
-                      <input
+                      <textarea
                         value={proposalDescription}
                         onChange={(event) =>
                           setProposalDescription(event.target.value)
                         }
-                        maxLength={240}
-                        placeholder="Ex.: material incluso e prazo de 2 dias"
-                        className="field w-full"
+                        maxLength={1000}
+                        required
+                        placeholder="Ex.: troca da resistência, revisão do disjuntor e condições do serviço"
+                        className="field min-h-11 w-full resize-y"
                       />
                     </label>
                   </div>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <label className="block text-xs font-bold text-[#344054]">Prazo estimado
+                      <input value={proposalDuration} onChange={(event) => setProposalDuration(event.target.value)} maxLength={120} placeholder="Ex.: 2 horas" className="field mt-1.5 w-full" />
+                    </label>
+                    <label className="block text-xs font-bold text-[#344054]">Válida até
+                      <input type="date" value={proposalExpiresAt} onChange={(event) => setProposalExpiresAt(event.target.value)} className="field mt-1.5 w-full" />
+                    </label>
+                  </div>
+                  <label className="mt-3 flex items-center gap-2 text-sm font-bold text-[#344054]">
+                    <input type="checkbox" checked={materialsIncluded} onChange={(event) => setMaterialsIncluded(event.target.checked)} />
+                    Materiais inclusos neste valor
+                  </label>
                   <button
-                    disabled={proposalSending || !proposalAmount.trim()}
+                    disabled={proposalSending || !proposalAmount.trim() || proposalDescription.trim().length < 3}
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#F97316] px-4 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-[#E8660C] disabled:cursor-not-allowed disabled:opacity-55 sm:ml-auto sm:w-auto"
                   >
                     <Send size={16} />
-                    {proposalSending ? "Enviando..." : "Enviar proposta"}
+                    {proposalSending ? "Enviando..." : activeProposal ? "Enviar contraproposta" : "Enviar proposta"}
                   </button>
                 </form>
               )}
@@ -591,14 +649,11 @@ export default function MessagesPage() {
                 </button>
               </form>
               {selected.booking.status === "PENDING" &&
+                !activeProposal &&
                 isProvider &&
                 !proposalOpen && (
                   <button
-                    onClick={() => {
-                      setProposalOpen(true);
-                      setProposalError("");
-                      setProposalSuccess("");
-                    }}
+                    onClick={openProposalForm}
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#EFB67D] py-2.5 text-sm font-extrabold text-[#F97316] hover:bg-[#FFF1E8]"
                   >
                     <BadgeDollarSign size={18} />

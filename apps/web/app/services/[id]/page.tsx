@@ -38,10 +38,6 @@ export default function ServiceDetailPage() {
     [loadError, setLoadError] = useState(""),
     [booking, setBooking] = useState(false),
     [startDate, setStartDate] = useState(""),
-    [requestDescription, setRequestDescription] = useState(""),
-    [location, setLocation] = useState(""),
-    [urgency, setUrgency] = useState("FLEXIBLE"),
-    [budgetReference, setBudgetReference] = useState(""),
     [success, setSuccess] = useState(false),
     [conversationId, setConversationId] = useState(""),
     [error, setError] = useState("");
@@ -73,31 +69,12 @@ export default function ServiceDetailPage() {
       setError("Selecione uma data para continuar");
       return;
     }
-    if (requestDescription.trim().length < 10) {
-      setError("Descreva o que precisa ser feito em pelo menos 10 caracteres.");
-      return;
-    }
-    if (location.trim().length < 2) {
-      setError("Informe pelo menos o bairro ou a região do atendimento.");
-      return;
-    }
-    const budget = budgetReference
-      ? Number(budgetReference.replace(",", "."))
-      : undefined;
-    if (budget !== undefined && (!Number.isFinite(budget) || budget <= 0)) {
-      setError("Informe um orçamento de referência válido.");
-      return;
-    }
     setBooking(true);
     setError("");
     try {
       const { data } = await api.post("/bookings", {
         serviceId: id,
         startDate,
-        requestDescription: requestDescription.trim(),
-        location: location.trim(),
-        urgency,
-        budgetReference: budget,
       });
       setConversationId(data.booking?.conversation?.id || "");
       setSuccess(true);
@@ -294,55 +271,6 @@ export default function ServiceDetailPage() {
                     setError("");
                   }}
                 />
-                <div className="mt-5 space-y-4 border-t border-[#EEEAE4] pt-5">
-                  <div>
-                    <p className="text-sm font-extrabold text-[#17233B]">
-                      Conte o que precisa ser feito
-                    </p>
-                    <textarea
-                      value={requestDescription}
-                      onChange={(event) => setRequestDescription(event.target.value)}
-                      maxLength={2000}
-                      rows={4}
-                      placeholder="Ex.: trocar a resistência do chuveiro e avaliar um disjuntor que está desarmando."
-                      className="field mt-2 w-full resize-y"
-                    />
-                  </div>
-                  <label className="block text-sm font-extrabold text-[#17233B]">
-                    Bairro ou região
-                    <input
-                      value={location}
-                      onChange={(event) => setLocation(event.target.value)}
-                      maxLength={120}
-                      placeholder="Ex.: Asa Sul, Brasília"
-                      className="field mt-2 w-full"
-                    />
-                  </label>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="block text-sm font-extrabold text-[#17233B]">
-                      Urgência
-                      <select
-                        value={urgency}
-                        onChange={(event) => setUrgency(event.target.value)}
-                        className="field mt-2 w-full"
-                      >
-                        <option value="FLEXIBLE">Sem urgência</option>
-                        <option value="SOON">Nos próximos dias</option>
-                        <option value="URGENT">Urgente</option>
-                      </select>
-                    </label>
-                    <label className="block text-sm font-extrabold text-[#17233B]">
-                      Orçamento em mente
-                      <input
-                        value={budgetReference}
-                        onChange={(event) => setBudgetReference(event.target.value)}
-                        inputMode="decimal"
-                        placeholder="Opcional"
-                        className="field mt-2 w-full"
-                      />
-                    </label>
-                  </div>
-                </div>
                 {error && (
                   <p
                     role="alert"
