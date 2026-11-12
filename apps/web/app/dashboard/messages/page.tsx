@@ -57,6 +57,7 @@ export default function MessagesPage() {
     [proposalSuccess, setProposalSuccess] = useState(""),
     [acceptingProposalId, setAcceptingProposalId] = useState(""),
     [userId, setUserId] = useState(""),
+    [realtimeConnected, setRealtimeConnected] = useState(false),
     [loadError, setLoadError] = useState(""),
     [loading, setLoading] = useState(true);
   const end = useRef<HTMLDivElement>(null);
@@ -73,19 +74,26 @@ export default function MessagesPage() {
         // O cookie HttpOnly autentica a chamada via proxy. Em seguida, um token
         // de 90 segundos abre o WebSocket direto à API, evitando a espera do
         // polling quando a conexão passa pela Vercel.
-        const [tokenResponse, configResponse] = await Promise.all([
-          api.get("/auth/socket-token"),
-          fetch("/api/socket-config"),
-        ]);
+        const configResponse = await fetch("/api/socket-config");
         if (!configResponse.ok) return;
         const { apiUrl } = (await configResponse.json()) as { apiUrl: string };
         if (disposed || !apiUrl) return;
 
         socket = io(apiUrl, {
-          auth: { token: tokenResponse.data.token },
-          transports: ["websocket", "polling"],
+          // Busca um token novo em toda reconexão; ele nunca é persistido no
+          // navegador e a sessão continua protegida pelo cookie HttpOnly.
+          auth: (callback) => {
+            void api
+              .get("/auth/socket-token")
+              .then(({ data }) => callback({ token: data.token }))
+              .catch(() => callback({}));
+          },
+          transports: ["websocket"],
         });
         socketRef.current = socket;
+        socket.on("connect", () => setRealtimeConnected(true));
+        socket.on("disconnect", () => setRealtimeConnected(false));
+        socket.on("connect_error", () => setRealtimeConnected(false));
 
         socket.on(
           "new_message",
@@ -111,6 +119,7 @@ export default function MessagesPage() {
       disposed = true;
       socket?.disconnect();
       socketRef.current = null;
+      setRealtimeConnected(false);
     };
   }, [userId, selected?.id]);
 
@@ -310,10 +319,14 @@ export default function MessagesPage() {
         >
           <div className="border-b-2 border-[#20365C] bg-[#20365C] p-5 text-white">
             <h2 className="font-extrabold text-white">Suas conversas</h2>
-            <p className="mt-1 text-sm text-white/80">
-              {bookings.length}{" "}
-              {bookings.length === 1 ? "conversa" : "conversas"}
-            </p>
+            <div className="mt-1 flex items-center justify-between gap-2 text-sm text-white/80">
+              <p>
+                {bookings.length} {bookings.length === 1 ? "conversa" : "conversas"}
+              </p>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${realtimeConnected ? "bg-emerald-400/20 text-emerald-100" : "bg-white/10 text-white/70"}`}>
+                {realtimeConnected ? "● Ao vivo" : "Conectando..."}
+              </span>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             {loadError && (
