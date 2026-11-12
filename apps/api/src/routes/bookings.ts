@@ -26,7 +26,7 @@ const createBookingSchema = z
 
 const createProposalSchema = z.object({
   amount: z.number().positive().max(1_000_000),
-  description: z.string().trim().min(3).max(1_000),
+  description: z.string().trim().min(3).max(1_000).optional(),
   materialsIncluded: z.boolean().default(false),
   estimatedDuration: z.string().trim().max(120).optional(),
   expiresAt: z
@@ -325,6 +325,12 @@ export async function bookingsRoutes(app: FastifyInstance) {
                 { statusCode: 403 },
               );
             }
+            if (!body.description) {
+              throw Object.assign(
+                new Error("Descreva o que está incluso na proposta"),
+                { statusCode: 400 },
+              );
+            }
             return tx.proposal.create({
               data: {
                 amount: body.amount,
@@ -366,10 +372,12 @@ export async function bookingsRoutes(app: FastifyInstance) {
           return tx.proposal.create({
             data: {
               amount: body.amount,
-              description: body.description,
-              materialsIncluded: body.materialsIncluded,
-              estimatedDuration: body.estimatedDuration || null,
-              expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+              // A contraproposta altera somente o valor. Escopo, prazo,
+              // materiais e validade permanecem os da oferta anterior.
+              description: pending.description,
+              materialsIncluded: pending.materialsIncluded,
+              estimatedDuration: pending.estimatedDuration,
+              expiresAt: pending.expiresAt,
               conversationId: booking.conversation!.id,
               senderId: userId,
               status: "PENDING",

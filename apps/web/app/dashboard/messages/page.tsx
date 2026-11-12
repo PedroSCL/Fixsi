@@ -213,7 +213,10 @@ export default function MessagesPage() {
       setProposalError("Informe um valor maior que zero.");
       return;
     }
-    if (proposalDescription.trim().length < 3) {
+    const isCounter = selected.proposals.some(
+      (item) => item.status === "PENDING" && item.senderId !== userId,
+    );
+    if (!isCounter && proposalDescription.trim().length < 3) {
       setProposalError("Descreva o que está incluso na proposta.");
       return;
     }
@@ -264,11 +267,13 @@ export default function MessagesPage() {
 
   function openProposalForm() {
     const active = selected?.proposals.find((item) => item.status === "PENDING");
-    setProposalAmount(active ? Number(active.amount).toFixed(2).replace(".", ",") : "");
+    // Em uma contraproposta, o destinatário informa só o novo valor. Os
+    // detalhes da proposta recebida continuam valendo para evitar ambiguidade.
+    setProposalAmount("");
     setProposalDescription(active?.description || "");
     setProposalDuration(active?.estimatedDuration || "");
     setMaterialsIncluded(active?.materialsIncluded || false);
-    setProposalExpiresAt("");
+    setProposalExpiresAt(active?.expiresAt?.slice(0, 10) || "");
     setProposalError("");
     setProposalSuccess("");
     setProposalOpen(true);
@@ -353,6 +358,9 @@ export default function MessagesPage() {
     selected?.booking.service?.userId === userId ||
     selected?.booking.tool?.userId === userId;
   const activeProposal = selected?.proposals.find((proposal) => proposal.status === "PENDING");
+  const isCounterProposal = Boolean(
+    activeProposal && activeProposal.senderId !== userId,
+  );
   const canCreateProposal = Boolean(
     selected?.booking.status === "PENDING" &&
       ((!activeProposal && isProvider) ||
@@ -378,7 +386,7 @@ export default function MessagesPage() {
           Mensagens
         </h1>
       </header>
-      <section className="mt-7 flex h-[640px] overflow-hidden rounded-xl border-2 border-[#20365C] bg-white shadow-[7px_8px_0_rgba(32,54,92,.1)]">
+      <section className="mt-7 flex min-h-[540px] h-[calc(100dvh-11rem)] overflow-hidden rounded-xl border-2 border-[#20365C] bg-white shadow-[7px_8px_0_rgba(32,54,92,.1)] md:h-[640px]">
         <aside
           className={`${selected ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col border-r border-[#E7E2DA] md:w-80`}
         >
@@ -446,7 +454,7 @@ export default function MessagesPage() {
         </aside>
         {selected ? (
           <div className="flex min-w-0 flex-1 flex-col">
-            <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E7E2DA] p-4 sm:p-5">
+            <header className="flex flex-col items-stretch gap-3 border-b border-[#E7E2DA] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setSelected(null)}
@@ -465,8 +473,8 @@ export default function MessagesPage() {
                 </div>
               </div>
               {activeProposal && (
-                <div className="flex flex-wrap items-center gap-3 rounded-xl bg-[#FFF9EA] px-4 py-2">
-                  <span>
+                <div className="flex w-full flex-wrap items-center gap-3 rounded-xl bg-[#FFF9EA] px-3 py-2 sm:w-auto sm:px-4">
+                  <span className="min-w-0 flex-1 sm:flex-none">
                     <small className="block text-[#667085]">
                       {activeProposal.round === 1 ? "Proposta" : `Contraproposta · rodada ${activeProposal.round} de 6`}
                     </small>
@@ -475,12 +483,12 @@ export default function MessagesPage() {
                   {activeProposal.senderId === userId ? (
                     <span className="text-xs font-bold text-[#667085]">Aguardando resposta</span>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
-                      <button onClick={() => accept(activeProposal.id)} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg bg-[#F97316] px-3 py-1.5 text-xs font-extrabold text-white">
+                    <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto">
+                      <button onClick={() => accept(activeProposal.id)} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg bg-[#F97316] px-2 py-2 text-xs font-extrabold text-white sm:px-3 sm:py-1.5">
                         {acceptingProposalId === activeProposal.id ? "Aceitando..." : "Aceitar"}
                       </button>
-                      <button onClick={openProposalForm} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg border border-[#EFB67D] bg-white px-3 py-1.5 text-xs font-extrabold text-[#D96500]">Contrapropor</button>
-                      <button onClick={() => reject(activeProposal.id)} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg px-2 py-1.5 text-xs font-bold text-[#B42318] hover:bg-[#FEF0EE]">{rejectingProposalId === activeProposal.id ? "Recusando..." : "Recusar"}</button>
+                      <button onClick={openProposalForm} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg border border-[#EFB67D] bg-white px-2 py-2 text-xs font-extrabold text-[#D96500] sm:px-3 sm:py-1.5">Contrapropor</button>
+                      <button onClick={() => reject(activeProposal.id)} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg px-2 py-2 text-xs font-bold text-[#B42318] hover:bg-[#FEF0EE] sm:py-1.5">{rejectingProposalId === activeProposal.id ? "Recusando..." : "Recusar"}</button>
                     </div>
                   )}
                 </div>
@@ -559,10 +567,10 @@ export default function MessagesPage() {
                     <div>
                       <p className="flex items-center gap-2 text-sm font-extrabold text-[#17233B]">
                         <BadgeDollarSign size={18} className="text-[#F97316]" />
-                        {activeProposal ? "Enviar contraproposta" : "Nova proposta"}
+                        {isCounterProposal ? "Enviar contraproposta" : "Nova proposta"}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-[#667085]">
-                        {activeProposal ? "A nova oferta substitui a proposta pendente anterior." : "Detalhe o valor, o prazo e o que está incluso."}
+                        {isCounterProposal ? "Informe apenas o novo valor. Os demais detalhes da proposta atual serão mantidos." : "Detalhe o valor, o prazo e o que está incluso."}
                       </p>
                     </div>
                     <button
@@ -577,10 +585,10 @@ export default function MessagesPage() {
                       <X size={17} />
                     </button>
                   </div>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-[180px_1fr]">
+                  <div className={`mt-4 grid gap-3 ${isCounterProposal ? "max-w-xs" : "sm:grid-cols-[180px_1fr]"}`}>
                     <label className="block">
                       <span className="mb-1.5 block text-xs font-bold text-[#344054]">
-                        Valor
+                        {isCounterProposal ? "Novo valor" : "Valor"}
                       </span>
                       <div className="field flex items-center gap-2 focus-within:border-[#F97316] focus-within:ring-2 focus-within:ring-[#F97316]/15">
                         <span className="font-bold text-[#667085]">R$</span>
@@ -596,7 +604,7 @@ export default function MessagesPage() {
                         />
                       </div>
                     </label>
-                    <label className="block">
+                    {!isCounterProposal && <label className="block">
                       <span className="mb-1.5 block text-xs font-bold text-[#344054]">
                         Escopo e observações
                       </span>
@@ -610,26 +618,26 @@ export default function MessagesPage() {
                         placeholder="Ex.: troca da resistência, revisão do disjuntor e condições do serviço"
                         className="field min-h-11 w-full resize-y"
                       />
-                    </label>
+                    </label>}
                   </div>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {!isCounterProposal && <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <label className="block text-xs font-bold text-[#344054]">Prazo estimado
                       <input value={proposalDuration} onChange={(event) => setProposalDuration(event.target.value)} maxLength={120} placeholder="Ex.: 2 horas" className="field mt-1.5 w-full" />
                     </label>
                     <label className="block text-xs font-bold text-[#344054]">Válida até
                       <input type="date" value={proposalExpiresAt} onChange={(event) => setProposalExpiresAt(event.target.value)} className="field mt-1.5 w-full" />
                     </label>
-                  </div>
-                  <label className="mt-3 flex items-center gap-2 text-sm font-bold text-[#344054]">
+                  </div>}
+                  {!isCounterProposal && <label className="mt-3 flex items-center gap-2 text-sm font-bold text-[#344054]">
                     <input type="checkbox" checked={materialsIncluded} onChange={(event) => setMaterialsIncluded(event.target.checked)} />
                     Materiais inclusos neste valor
-                  </label>
+                  </label>}
                   <button
-                    disabled={proposalSending || !proposalAmount.trim() || proposalDescription.trim().length < 3}
+                    disabled={proposalSending || !proposalAmount.trim() || (!isCounterProposal && proposalDescription.trim().length < 3)}
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#F97316] px-4 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-[#E8660C] disabled:cursor-not-allowed disabled:opacity-55 sm:ml-auto sm:w-auto"
                   >
                     <Send size={16} />
-                    {proposalSending ? "Enviando..." : activeProposal ? "Enviar contraproposta" : "Enviar proposta"}
+                    {proposalSending ? "Enviando..." : isCounterProposal ? "Enviar contraproposta" : "Enviar proposta"}
                   </button>
                 </form>
               )}
