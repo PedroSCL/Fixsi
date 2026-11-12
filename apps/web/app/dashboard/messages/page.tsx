@@ -24,6 +24,10 @@ interface Conversation {
     id: string;
     status: string;
     clientId: string;
+    requestDescription?: string | null;
+    location?: string | null;
+    urgency?: "FLEXIBLE" | "SOON" | "URGENT";
+    budgetReference?: number | null;
     service?: { title: string; userId: string };
     tool?: { title: string; userId: string };
   };
@@ -427,6 +431,31 @@ export default function MessagesPage() {
                 ))}
             </header>
             <div className="flex flex-1 flex-col gap-3 overflow-y-auto bg-[#EEF2F7] p-4 sm:p-5">
+              {selected.booking.requestDescription && (
+                <section className="rounded-xl border border-[#F0C79E] bg-[#FFF9F1] p-4 text-sm text-[#475467]">
+                  <p className="font-extrabold text-[#17233B]">Detalhes do pedido</p>
+                  <p className="mt-2 whitespace-pre-wrap leading-6">
+                    {selected.booking.requestDescription}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold">
+                    {selected.booking.location && (
+                      <span>Local: {selected.booking.location}</span>
+                    )}
+                    <span>
+                      Urgência: {({
+                        FLEXIBLE: "Sem urgência",
+                        SOON: "Nos próximos dias",
+                        URGENT: "Urgente",
+                      } as Record<string, string>)[selected.booking.urgency || "FLEXIBLE"]}
+                    </span>
+                    {selected.booking.budgetReference && (
+                      <span>
+                        Referência: R$ {Number(selected.booking.budgetReference).toFixed(2).replace(".", ",")}
+                      </span>
+                    )}
+                  </div>
+                </section>
+              )}
               {selected.messages.length === 0 ? (
                 <div className="m-auto text-center">
                   <MessageCircle className="mx-auto text-[#9DB1AE]" size={28} />

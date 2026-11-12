@@ -17,6 +17,10 @@ const createBookingSchema = z
     toolId: z.string().optional(),
     startDate: z.string(),
     endDate: z.string().optional(),
+    requestDescription: z.string().trim().min(10).max(2_000),
+    location: z.string().trim().min(2).max(120),
+    urgency: z.enum(["FLEXIBLE", "SOON", "URGENT"]).default("FLEXIBLE"),
+    budgetReference: z.number().positive().max(1_000_000).optional(),
   })
   .refine(
     (data) =>
@@ -136,6 +140,10 @@ export async function bookingsRoutes(app: FastifyInstance) {
           toolId: body.toolId,
           startDate,
           endDate,
+          requestDescription: body.requestDescription,
+          location: body.location,
+          urgency: body.urgency,
+          budgetReference: body.budgetReference,
           status: "PENDING",
         },
       });
@@ -146,7 +154,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
 
       await tx.message.create({
         data: {
-          content: `Olá! Enviei uma solicitação para ${listingTitle}. Podemos combinar os detalhes?`,
+          content: `Olá! Enviei uma solicitação para ${listingTitle}. ${body.requestDescription}`,
           conversationId: conversation.id,
           senderId: clientId,
         },

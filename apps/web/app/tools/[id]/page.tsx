@@ -26,6 +26,10 @@ export default function ToolDetailPage() {
     [loading, setLoading] = useState(true),
     [startDate, setStartDate] = useState(""),
     [endDate, setEndDate] = useState(""),
+    [requestDescription, setRequestDescription] = useState(""),
+    [location, setLocation] = useState(""),
+    [urgency, setUrgency] = useState("FLEXIBLE"),
+    [budgetReference, setBudgetReference] = useState(""),
     [sending, setSending] = useState(false),
     [success, setSuccess] = useState(false),
     [conversationId, setConversationId] = useState(""),
@@ -50,10 +54,33 @@ export default function ToolDetailPage() {
       setError("A devolução deve ser depois da retirada");
       return;
     }
+    if (requestDescription.trim().length < 10) {
+      setError("Descreva o uso da ferramenta em pelo menos 10 caracteres.");
+      return;
+    }
+    if (location.trim().length < 2) {
+      setError("Informe pelo menos o bairro ou a região da retirada.");
+      return;
+    }
+    const budget = budgetReference
+      ? Number(budgetReference.replace(",", "."))
+      : undefined;
+    if (budget !== undefined && (!Number.isFinite(budget) || budget <= 0)) {
+      setError("Informe um orçamento de referência válido.");
+      return;
+    }
     setSending(true);
     setError("");
     try {
-      const { data } = await api.post("/bookings", { toolId: id, startDate, endDate });
+      const { data } = await api.post("/bookings", {
+        toolId: id,
+        startDate,
+        endDate,
+        requestDescription: requestDescription.trim(),
+        location: location.trim(),
+        urgency,
+        budgetReference: budget,
+      });
       setConversationId(data.booking?.conversation?.id || "");
       setSuccess(true);
     } catch (err: unknown) {
@@ -173,6 +200,41 @@ export default function ToolDetailPage() {
                     className="field mt-2"
                   />
                 </label>
+                <label className="block text-sm font-extrabold">
+                  Para que você precisa da ferramenta?
+                  <textarea
+                    value={requestDescription}
+                    onChange={(event) => setRequestDescription(event.target.value)}
+                    maxLength={2000}
+                    rows={3}
+                    placeholder="Ex.: furar paredes para instalar prateleiras em dois cômodos."
+                    className="field mt-2 w-full resize-y"
+                  />
+                </label>
+                <label className="block text-sm font-extrabold">
+                  Bairro ou região
+                  <input
+                    value={location}
+                    onChange={(event) => setLocation(event.target.value)}
+                    maxLength={120}
+                    placeholder="Ex.: Centro, Goiânia"
+                    className="field mt-2 w-full"
+                  />
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm font-extrabold">
+                    Urgência
+                    <select value={urgency} onChange={(event) => setUrgency(event.target.value)} className="field mt-2 w-full">
+                      <option value="FLEXIBLE">Sem urgência</option>
+                      <option value="SOON">Nos próximos dias</option>
+                      <option value="URGENT">Urgente</option>
+                    </select>
+                  </label>
+                  <label className="block text-sm font-extrabold">
+                    Orçamento em mente
+                    <input value={budgetReference} onChange={(event) => setBudgetReference(event.target.value)} inputMode="decimal" placeholder="Opcional" className="field mt-2 w-full" />
+                  </label>
+                </div>
                 {error && (
                   <p className="text-sm font-semibold text-red-700">{error}</p>
                 )}

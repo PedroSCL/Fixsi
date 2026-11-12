@@ -29,6 +29,12 @@ enum BookingStatus {
   DISPUTED
 }
 
+enum BookingUrgency {
+  FLEXIBLE
+  SOON
+  URGENT
+}
+
 enum ProposalStatus {
   PENDING
   ACCEPTED
@@ -192,6 +198,10 @@ model Booking {
   status              BookingStatus @default(PENDING)
   startDate           DateTime
   endDate             DateTime?
+  requestDescription  String?
+  location            String?
+  urgency             BookingUrgency @default(FLEXIBLE)
+  budgetReference     Decimal?
   providerCompletedAt DateTime?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
