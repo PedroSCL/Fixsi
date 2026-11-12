@@ -204,6 +204,22 @@ export async function authRoutes(app: FastifyInstance) {
     },
   );
 
+  // Token de curta duração usado exclusivamente para abrir o WebSocket direto
+  // com a API. O navegador o mantém somente em memória e a sessão é validada
+  // novamente durante o handshake do Socket.IO.
+  app.get(
+    "/socket-token",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const payload = request.user as { id: string; sessionId?: string };
+      const token = app.jwt.sign(
+        { id: payload.id, sessionId: payload.sessionId, type: "socket" },
+        { expiresIn: "90s" },
+      );
+      return reply.send({ token });
+    },
+  );
+
   app.post("/logout", async (request, reply) => {
     await revokeSession(request);
     clearSessionCookies(reply);

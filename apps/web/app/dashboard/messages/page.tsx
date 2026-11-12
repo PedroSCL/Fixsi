@@ -65,30 +65,54 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!userId) return;
 
-    // O proxy /api mantém o cookie HttpOnly no mesmo domínio do site, sem
-    // expor tokens no navegador para conectar ao chat em tempo real.
-    const socket = io({
-      path: "/api/socket.io",
-      withCredentials: true,
-      transports: ["websocket", "polling"],
-    });
-    socketRef.current = socket;
+    let socket: Socket | null = null;
+    let disposed = false;
 
-    socket.on("new_message", (incoming: Message & { conversationId: string }) => {
-      setSelected((current) => {
-        if (!current || current.id !== incoming.conversationId) return current;
-        if (current.messages.some((message) => message.id === incoming.id)) {
-          return current;
-        }
-        return { ...current, messages: [...current.messages, incoming] };
-      });
-    });
+    void (async () => {
+      try {
+        // O cookie HttpOnly autentica a chamada via proxy. Em seguida, um token
+        // de 90 segundos abre o WebSocket direto à API, evitando a espera do
+        // polling quando a conexão passa pela Vercel.
+        const [tokenResponse, configResponse] = await Promise.all([
+          api.get("/auth/socket-token"),
+          fetch("/api/socket-config"),
+        ]);
+        if (!configResponse.ok) return;
+        const { apiUrl } = (await configResponse.json()) as { apiUrl: string };
+        if (disposed || !apiUrl) return;
+
+        socket = io(apiUrl, {
+          auth: { token: tokenResponse.data.token },
+          transports: ["websocket", "polling"],
+        });
+        socketRef.current = socket;
+
+        socket.on(
+          "new_message",
+          (incoming: Message & { conversationId: string }) => {
+            setSelected((current) => {
+              if (!current || current.id !== incoming.conversationId) return current;
+              if (current.messages.some((message) => message.id === incoming.id)) {
+                return current;
+              }
+              return { ...current, messages: [...current.messages, incoming] };
+            });
+          },
+        );
+
+        if (selected?.id) socket.emit("join_conversation", selected.id);
+      } catch {
+        // O envio HTTP continua funcionando como alternativa se a conexão
+        // em tempo real estiver indisponível.
+      }
+    })();
 
     return () => {
-      socket.disconnect();
+      disposed = true;
+      socket?.disconnect();
       socketRef.current = null;
     };
-  }, [userId]);
+  }, [userId, selected?.id]);
 
   useEffect(() => {
     if (selected?.id) socketRef.current?.emit("join_conversation", selected.id);
