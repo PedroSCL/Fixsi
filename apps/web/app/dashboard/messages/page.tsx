@@ -198,6 +198,7 @@ export default function MessagesPage() {
   async function open(id: string) {
     try {
       setSelected((await api.get(`/conversations/${id}`)).data.conversation);
+      window.dispatchEvent(new Event("fixsi:messages-read"));
       setProposalOpen(false);
       setProposalAmount("");
       setProposalDescription("");

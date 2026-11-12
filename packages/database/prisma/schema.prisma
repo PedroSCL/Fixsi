@@ -82,6 +82,7 @@ model User {
   reviewsWritten       Review[]              @relation("ReviewAuthor")
   reviewsReceived      Review[]              @relation("ReviewTarget")
   messagesSent         Message[]             @relation("MessageSender")
+  conversationReads    ConversationRead[]
   proposals            Proposal[]            @relation("ProposalSender")
   reportsMade          Report[]              @relation("ReportsMade")
   sessions             Session[]
@@ -271,6 +272,24 @@ model Conversation {
 
   messages  Message[]
   proposals Proposal[]
+  reads     ConversationRead[]
+}
+
+// Marca o último momento em que cada participante abriu uma conversa.
+// Isso permite exibir notificações de mensagens novas sem depender do
+// armazenamento local do navegador.
+model ConversationRead {
+  id         String   @id @default(cuid())
+  lastReadAt DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, lastReadAt])
 }
 
 model Message {

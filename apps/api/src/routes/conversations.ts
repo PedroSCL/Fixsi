@@ -10,6 +10,44 @@ const sendMessageSchema = z.object({
 });
 
 export async function conversationsRoutes(app: FastifyInstance) {
+  // Retorna quantas conversas têm ao menos uma mensagem recebida após a
+  // última visualização do usuário atual. A rota vem antes de /:id para que
+  // "unread" não seja interpretado como um id de conversa.
+  app.get("/unread", { preHandler: [authenticate] }, async (request) => {
+    const userId = (request.user as { id: string }).id;
+    const conversations = await prisma.conversation.findMany({
+      where: {
+        booking: {
+          OR: [{ clientId: userId }, { providerId: userId }],
+        },
+      },
+      select: {
+        reads: {
+          where: { userId },
+          select: { lastReadAt: true },
+          take: 1,
+        },
+        messages: {
+          where: { senderId: { not: userId } },
+          orderBy: { createdAt: "desc" },
+          select: { createdAt: true },
+          take: 1,
+        },
+      },
+    });
+
+    const unreadCount = conversations.filter((conversation) => {
+      const lastReceivedMessage = conversation.messages[0];
+      const lastRead = conversation.reads[0];
+      return (
+        lastReceivedMessage &&
+        (!lastRead || lastReceivedMessage.createdAt > lastRead.lastReadAt)
+      );
+    }).length;
+
+    return { unreadCount };
+  });
+
   // Buscar histórico de mensagens de uma conversa
   app.get("/:id", { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as { id: string };
@@ -51,6 +89,14 @@ export async function conversationsRoutes(app: FastifyInstance) {
     if (userId !== clientId && userId !== providerId) {
       return reply.code(403).send({ error: "Sem permissão" });
     }
+
+    await prisma.conversationRead.upsert({
+      where: {
+        conversationId_userId: { conversationId: conversation.id, userId },
+      },
+      update: { lastReadAt: new Date() },
+      create: { conversationId: conversation.id, userId },
+    });
 
     return reply.send({ conversation });
   });
