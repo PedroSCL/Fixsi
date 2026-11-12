@@ -33,6 +33,7 @@ interface Conversation {
     description?: string;
     status: string;
     senderId: string;
+    round: number;
   }[];
 }
 interface Booking {
@@ -55,6 +56,7 @@ export default function MessagesPage() {
     [proposalError, setProposalError] = useState(""),
     [proposalSuccess, setProposalSuccess] = useState(""),
     [acceptingProposalId, setAcceptingProposalId] = useState(""),
+    [rejectingProposalId, setRejectingProposalId] = useState(""),
     [userId, setUserId] = useState(""),
     [loading, setLoading] = useState(true);
   const end = useRef<HTMLDivElement>(null);
@@ -133,13 +135,23 @@ export default function MessagesPage() {
 
       setSelected((current) =>
         current
-          ? { ...current, proposals: [data.proposal, ...current.proposals] }
+          ? {
+              ...current,
+              proposals: [
+                data.proposal,
+                ...current.proposals.map((item) =>
+                  item.status === "PENDING"
+                    ? { ...item, status: "SUPERSEDED" }
+                    : item,
+                ),
+              ],
+            }
           : current,
       );
       setProposalAmount("");
       setProposalDescription("");
       setProposalOpen(false);
-      setProposalSuccess("Proposta enviada com sucesso.");
+      setProposalSuccess("Proposta enviada. Aguardando resposta.");
     } catch (err: unknown) {
       setProposalError(
         apiErrorMessage(err, "Não foi possível enviar a proposta."),
@@ -147,6 +159,15 @@ export default function MessagesPage() {
     } finally {
       setProposalSending(false);
     }
+  }
+
+  function openProposalForm() {
+    const active = selected?.proposals.find((item) => item.status === "PENDING");
+    setProposalAmount(active ? Number(active.amount).toFixed(2).replace(".", ",") : "");
+    setProposalDescription("");
+    setProposalError("");
+    setProposalSuccess("");
+    setProposalOpen(true);
   }
 
   async function accept(id: string) {
@@ -197,6 +218,31 @@ export default function MessagesPage() {
       setAcceptingProposalId("");
     }
   }
+  async function reject(id: string) {
+    if (!selected) return;
+    setRejectingProposalId(id);
+    setProposalError("");
+    setProposalSuccess("");
+    try {
+      await api.patch(`/bookings/${selected.booking.id}/proposals/${id}/reject`);
+      setSelected((current) =>
+        current
+          ? {
+              ...current,
+              proposals: current.proposals.map((item) =>
+                item.id === id ? { ...item, status: "REJECTED" } : item,
+              ),
+            }
+          : current,
+      );
+      setProposalSuccess("Proposta recusada. A negociação pode ser reiniciada pelo profissional.");
+      void load();
+    } catch (err: unknown) {
+      setProposalError(apiErrorMessage(err, "Não foi possível recusar a proposta."));
+    } finally {
+      setRejectingProposalId("");
+    }
+  }
   const title = (b: Booking) => b.service?.title || b.tool?.title || "Conversa";
   const status = (value: string) =>
     ({
@@ -209,6 +255,14 @@ export default function MessagesPage() {
   const isProvider =
     selected?.booking.service?.userId === userId ||
     selected?.booking.tool?.userId === userId;
+  const activeProposal = selected?.proposals.find(
+    (proposal) => proposal.status === "PENDING",
+  );
+  const canCreateProposal = Boolean(
+    selected?.booking.status === "PENDING" &&
+      ((!activeProposal && isProvider) ||
+        (activeProposal && activeProposal.senderId !== userId)),
+  );
   if (loading)
     return (
       <div className="flex min-h-96 items-center justify-center text-[#667085]">
@@ -299,34 +353,45 @@ export default function MessagesPage() {
                   </p>
                 </div>
               </div>
-              {selected.proposals
-                .filter((p) => p.status === "PENDING")
-                .map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center gap-3 rounded-xl bg-[#FFF9EA] px-4 py-2"
-                  >
-                    <span>
-                      <small className="block text-[#667085]">Proposta</small>
-                      <strong className="text-[#984B00]">
-                        R$ {Number(p.amount).toFixed(2)}
-                      </strong>
-                    </span>
-                    {p.senderId !== userId && (
-                      <button
-                        onClick={() => accept(p.id)}
-                        disabled={Boolean(acceptingProposalId)}
-                        className="rounded-lg bg-[#F97316] px-3 py-1.5 text-xs font-extrabold text-white"
-                      >
-                        {acceptingProposalId === p.id
-                          ? "Aceitando..."
-                          : "Aceitar"}
+              {activeProposal && (
+                <div className="flex flex-wrap items-center gap-3 rounded-xl bg-[#FFF9EA] px-4 py-2">
+                  <span>
+                    <small className="block text-[#667085]">
+                      {activeProposal.round === 1
+                        ? "Proposta"
+                        : `Contraproposta · rodada ${activeProposal.round} de 6`}
+                    </small>
+                    <strong className="text-[#984B00]">R$ {Number(activeProposal.amount).toFixed(2)}</strong>
+                  </span>
+                  {activeProposal.senderId === userId ? (
+                    <span className="text-xs font-bold text-[#667085]">Aguardando resposta</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => accept(activeProposal.id)} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg bg-[#F97316] px-3 py-1.5 text-xs font-extrabold text-white">
+                        {acceptingProposalId === activeProposal.id ? "Aceitando..." : "Aceitar"}
                       </button>
-                    )}
-                  </div>
-                ))}
+                      <button onClick={openProposalForm} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg border border-[#EFB67D] bg-white px-3 py-1.5 text-xs font-extrabold text-[#D96500]">Contrapropor</button>
+                      <button onClick={() => reject(activeProposal.id)} disabled={Boolean(acceptingProposalId) || Boolean(rejectingProposalId)} className="rounded-lg px-2 py-1.5 text-xs font-bold text-[#B42318] hover:bg-[#FEF0EE]">{rejectingProposalId === activeProposal.id ? "Recusando..." : "Recusar"}</button>
+                    </div>
+                  )}
+                </div>
+              )}
             </header>
             <div className="flex flex-1 flex-col gap-3 overflow-y-auto bg-[#EEF2F7] p-4 sm:p-5">
+              {selected.proposals.length > 0 && (
+                <div className="rounded-xl border border-[#E7E2DA] bg-white p-4 text-sm">
+                  <strong className="text-[#17233B]">Histórico de propostas</strong>
+                  <div className="mt-2 space-y-2">
+                    {[...selected.proposals].reverse().map((item) => (
+                      <div key={item.id} className="border-t border-[#EEEAE4] pt-2 text-[#667085]">
+                        <span className="font-bold text-[#17233B]">{item.senderId === userId ? "Você" : "Outra pessoa"} · R$ {Number(item.amount).toFixed(2).replace(".", ",")}</span>
+                        <span className="ml-2">{({ PENDING: "Pendente", ACCEPTED: "Aceita", REJECTED: "Recusada", SUPERSEDED: "Substituída", EXPIRED: "Expirada" } as Record<string, string>)[item.status] || item.status}</span>
+                        {item.description && <p className="mt-1">{item.description}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {selected.messages.length === 0 ? (
                 <div className="m-auto text-center">
                   <MessageCircle className="mx-auto text-[#9DB1AE]" size={28} />
@@ -376,7 +441,7 @@ export default function MessagesPage() {
                   <span>{proposalError || proposalSuccess}</span>
                 </div>
               )}
-              {proposalOpen && isProvider && (
+              {proposalOpen && canCreateProposal && (
                 <form
                   onSubmit={proposal}
                   className="mb-3 rounded-2xl border border-[#F4C99F] bg-[#FFF9F3] p-4"
@@ -385,10 +450,12 @@ export default function MessagesPage() {
                     <div>
                       <p className="flex items-center gap-2 text-sm font-extrabold text-[#17233B]">
                         <BadgeDollarSign size={18} className="text-[#F97316]" />
-                        Nova proposta
+                        {activeProposal ? "Enviar contraproposta" : "Nova proposta"}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-[#667085]">
-                        Informe o valor combinado com o cliente.
+                        {activeProposal
+                          ? "A nova oferta substitui a proposta pendente anterior."
+                          : "Informe o valor inicial para o cliente."}
                       </p>
                     </div>
                     <button
@@ -462,14 +529,11 @@ export default function MessagesPage() {
                 </button>
               </form>
               {selected.booking.status === "PENDING" &&
+                !activeProposal &&
                 isProvider &&
                 !proposalOpen && (
                   <button
-                    onClick={() => {
-                      setProposalOpen(true);
-                      setProposalError("");
-                      setProposalSuccess("");
-                    }}
+                    onClick={openProposalForm}
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#EFB67D] py-2.5 text-sm font-extrabold text-[#F97316] hover:bg-[#FFF1E8]"
                   >
                     <BadgeDollarSign size={18} />
