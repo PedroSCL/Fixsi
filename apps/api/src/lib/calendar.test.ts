@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  DEFAULT_WEEKDAYS,
   addUtcDays,
   formatDateOnly,
   isDateAvailable,
@@ -23,6 +24,11 @@ test("exceção substitui a regra semanal", () => {
     isDateAvailable(saturday, [1, 2, 3, 4, 5], new Map([["2026-09-26", true]])),
     true,
   );
+});
+
+test("agenda padrão permite atendimento no fim de semana", () => {
+  const saturday = parseDateOnly("2026-09-26");
+  assert.equal(isDateAvailable(saturday, DEFAULT_WEEKDAYS, new Map()), true);
 });
 
 test("soma dias em UTC", () => {

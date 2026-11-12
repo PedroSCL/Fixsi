@@ -1,4 +1,6 @@
-export const DEFAULT_WEEKDAYS = [1, 2, 3, 4, 5];
+// Enquanto o profissional não define sua própria agenda, o anúncio fica
+// disponível todos os dias — inclusive no mesmo dia da solicitação.
+export const DEFAULT_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
