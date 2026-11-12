@@ -11,6 +11,16 @@ export function disconnectUserSockets(userId: string) {
   socketServer?.in(`user:${userId}`).disconnectSockets(true);
 }
 
+// Também é usado pelas rotas HTTP: assim, quem estiver com o chat aberto
+// recebe a nova mensagem imediatamente, mesmo que o remetente use o fallback
+// HTTP em vez do Socket.IO.
+export function broadcastConversationMessage(
+  conversationId: string,
+  message: unknown,
+) {
+  socketServer?.to(conversationId).emit("new_message", message);
+}
+
 export function setupSocket(
   httpServer: HttpServer,
   jwt: { verify: (token: string) => unknown },

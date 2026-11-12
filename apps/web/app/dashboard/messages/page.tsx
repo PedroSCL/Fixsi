@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { io, Socket } from "socket.io-client";
 import {
   ArrowLeft,
   BadgeDollarSign,
@@ -60,6 +61,40 @@ export default function MessagesPage() {
     [loadError, setLoadError] = useState(""),
     [loading, setLoading] = useState(true);
   const end = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    // O proxy /api mantém o cookie HttpOnly no mesmo domínio do site, sem
+    // expor tokens no navegador para conectar ao chat em tempo real.
+    const socket = io({
+      path: "/api/socket.io",
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+    });
+    socketRef.current = socket;
+
+    socket.on("new_message", (incoming: Message & { conversationId: string }) => {
+      setSelected((current) => {
+        if (!current || current.id !== incoming.conversationId) return current;
+        if (current.messages.some((message) => message.id === incoming.id)) {
+          return current;
+        }
+        return { ...current, messages: [...current.messages, incoming] };
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (selected?.id) socketRef.current?.emit("join_conversation", selected.id);
+  }, [selected?.id]);
+
   useEffect(() => {
     const conversationId = searchParams.get("conversation");
     api

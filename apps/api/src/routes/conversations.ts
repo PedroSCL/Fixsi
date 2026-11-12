@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../plugins/authenticate";
+import { broadcastConversationMessage } from "../lib/socket";
 
 const sendMessageSchema = z.object({
   content: z.string().min(1),
@@ -101,6 +102,8 @@ export async function conversationsRoutes(app: FastifyInstance) {
           },
         },
       });
+
+      broadcastConversationMessage(id, message);
 
       return reply.code(201).send({ message });
     },
