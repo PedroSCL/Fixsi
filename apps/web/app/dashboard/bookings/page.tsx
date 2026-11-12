@@ -23,6 +23,7 @@ interface Booking {
   service?: { id: string; title: string; category: string; userId: string };
   tool?: { id: string; title: string; category: string; userId: string };
   proposal?: { amount: number; status: string } | null;
+  reviews?: { authorId: string }[];
   conversation: { id: string };
   client?: { id: string; name: string; avatarUrl?: string | null };
   provider?: { id: string; name: string; avatarUrl?: string | null };
@@ -110,7 +111,7 @@ export default function BookingsPage() {
     setActionError(null);
     try {
       await api.patch(`/bookings/${id}/complete`);
-      await load();
+      router.push(`/dashboard/bookings/${id}/review`);
     } catch (err: unknown) {
       setActionError(
         apiErrorMessage(err, "Não foi possível confirmar a conclusão"),
@@ -120,6 +121,17 @@ export default function BookingsPage() {
     }
   }
   const title = (b: Booking) => b.service?.title || b.tool?.title || "Pedido";
+  useEffect(() => {
+    if (loading || !userId) return;
+    const pendingReview = bookings.find(
+      (booking) =>
+        booking.status === "COMPLETED" &&
+        !booking.reviews?.some((review) => review.authorId === userId),
+    );
+    if (pendingReview) {
+      router.replace(`/dashboard/bookings/${pendingReview.id}/review`);
+    }
+  }, [bookings, loading, router, userId]);
   const visibleBookings = bookings.filter((booking) => {
     if (view === "client") return booking.clientId === userId;
     if (view === "provider") {
@@ -317,6 +329,9 @@ export default function BookingsPage() {
                 label: b.status,
                 classes: "bg-slate-100 text-slate-700",
               };
+              const hasReviewed = b.reviews?.some(
+                (review) => review.authorId === userId,
+              );
               return (
                 <article
                   key={b.id}
@@ -422,13 +437,18 @@ export default function BookingsPage() {
                           Serviço em andamento
                         </span>
                       )}
-                    {b.status === "COMPLETED" && (
+                    {b.status === "COMPLETED" && !hasReviewed && (
                       <Link
                         href={`/dashboard/bookings/${b.id}/review`}
                         className="btn-primary min-h-10 px-4 py-2 text-sm"
                       >
-                        <Star size={16} /> Avaliar
+                        <Star size={16} /> Avaliação obrigatória
                       </Link>
+                    )}
+                    {b.status === "COMPLETED" && hasReviewed && (
+                      <span className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
+                        Avaliação enviada
+                      </span>
                     )}
                   </div>
                 </article>

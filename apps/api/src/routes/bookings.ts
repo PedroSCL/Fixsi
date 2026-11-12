@@ -192,6 +192,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
         },
         conversation: { select: { id: true } },
         proposal: true,
+        reviews: { select: { authorId: true } },
         client: { select: { id: true, name: true, avatarUrl: true } },
         provider: { select: { id: true, name: true, avatarUrl: true } },
       },
