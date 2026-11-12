@@ -30,10 +30,6 @@ const createProposalSchema = z.object({
   description: z.string().trim().min(3).max(1_000).optional(),
   materialsIncluded: z.boolean().default(false),
   estimatedDuration: z.string().trim().max(120).optional(),
-  expiresAt: z
-    .string()
-    .date()
-    .optional(),
 });
 
 const MAX_PROPOSAL_ROUNDS = 6;
@@ -293,24 +289,6 @@ export async function bookingsRoutes(app: FastifyInstance) {
         });
       }
 
-      const expired = await prisma.proposal.findFirst({
-        where: {
-          conversationId: booking.conversation.id,
-          status: "PENDING",
-          expiresAt: { lt: new Date() },
-        },
-        select: { id: true },
-      });
-      if (expired) {
-        await prisma.proposal.updateMany({
-          where: { id: expired.id, status: "PENDING" },
-          data: { status: "EXPIRED" },
-        });
-        return reply.code(409).send({
-          error: "A proposta anterior expirou. O profissional pode enviar uma nova oferta.",
-        });
-      }
-
       let proposal;
       try {
         proposal = await prisma.$transaction(async (tx) => {
@@ -338,7 +316,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
                 description: body.description,
                 materialsIncluded: body.materialsIncluded,
                 estimatedDuration: body.estimatedDuration || null,
-                expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+                expiresAt: null,
                 conversationId: booking.conversation!.id,
                 senderId: userId,
                 status: "PENDING",
@@ -378,7 +356,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
               description: pending.description,
               materialsIncluded: pending.materialsIncluded,
               estimatedDuration: pending.estimatedDuration,
-              expiresAt: pending.expiresAt,
+              expiresAt: null,
               conversationId: booking.conversation!.id,
               senderId: userId,
               status: "PENDING",
@@ -488,8 +466,7 @@ export async function bookingsRoutes(app: FastifyInstance) {
 
       if (
         proposal.status !== "PENDING" ||
-        booking.status !== "PENDING" ||
-        (proposal.expiresAt && proposal.expiresAt <= new Date())
+        booking.status !== "PENDING"
       ) {
         return reply
           .code(409)
@@ -504,7 +481,6 @@ export async function bookingsRoutes(app: FastifyInstance) {
             where: {
               id: proposalId,
               status: "PENDING",
-              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
             },
             data: { status: "ACCEPTED", bookingId: id },
           });

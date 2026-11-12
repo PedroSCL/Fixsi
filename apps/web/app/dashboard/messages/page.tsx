@@ -61,7 +61,6 @@ export default function MessagesPage() {
     [proposalAmount, setProposalAmount] = useState(""),
     [proposalDescription, setProposalDescription] = useState(""),
     [proposalDuration, setProposalDuration] = useState(""),
-    [proposalExpiresAt, setProposalExpiresAt] = useState(""),
     [materialsIncluded, setMaterialsIncluded] = useState(false),
     [proposalSending, setProposalSending] = useState(false),
     [proposalError, setProposalError] = useState(""),
@@ -203,7 +202,6 @@ export default function MessagesPage() {
       setProposalAmount("");
       setProposalDescription("");
       setProposalDuration("");
-      setProposalExpiresAt("");
       setMaterialsIncluded(false);
       setProposalError("");
       setProposalSuccess("");
@@ -264,7 +262,6 @@ export default function MessagesPage() {
           description: proposalDescription.trim(),
           materialsIncluded,
           estimatedDuration: proposalDuration.trim() || undefined,
-          expiresAt: proposalExpiresAt || undefined,
         },
       );
 
@@ -284,7 +281,6 @@ export default function MessagesPage() {
       setProposalAmount("");
       setProposalDescription("");
       setProposalDuration("");
-      setProposalExpiresAt("");
       setMaterialsIncluded(false);
       setProposalOpen(false);
       setProposalSuccess("Proposta enviada com sucesso.");
@@ -305,7 +301,6 @@ export default function MessagesPage() {
     setProposalDescription(active?.description || "");
     setProposalDuration(active?.estimatedDuration || "");
     setMaterialsIncluded(active?.materialsIncluded || false);
-    setProposalExpiresAt(active?.expiresAt?.slice(0, 10) || "");
     setProposalError("");
     setProposalSuccess("");
     setProposalOpen(true);
@@ -662,9 +657,6 @@ export default function MessagesPage() {
                   {!isCounterProposal && <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <label className="block text-xs font-bold text-[#344054]">Prazo estimado
                       <input value={proposalDuration} onChange={(event) => setProposalDuration(event.target.value)} maxLength={120} placeholder="Ex.: 2 horas" className="field mt-1.5 w-full" />
-                    </label>
-                    <label className="block text-xs font-bold text-[#344054]">Válida até
-                      <input type="date" value={proposalExpiresAt} onChange={(event) => setProposalExpiresAt(event.target.value)} className="field mt-1.5 w-full" />
                     </label>
                   </div>}
                   {!isCounterProposal && <label className="mt-3 flex items-center gap-2 text-sm font-bold text-[#344054]">
