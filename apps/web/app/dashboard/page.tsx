@@ -20,18 +20,29 @@ import {
 } from "lucide-react";
 import {
   api,
+  apiErrorMessage,
   clearLegacyAuthStorage,
+  isUnauthorized,
   notifyAuthChanged,
   User,
 } from "../lib/api";
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [authError, setAuthError] = useState("");
   useEffect(() => {
     api
       .get("/auth/me")
       .then(({ data }) => setUser(data.user))
-      .catch(() => router.replace("/login"));
+      .catch((error: unknown) => {
+        if (isUnauthorized(error)) {
+          router.replace("/login");
+          return;
+        }
+        setAuthError(
+          apiErrorMessage(error, "Não foi possível validar sua sessão."),
+        );
+      });
   }, [router]);
   async function logout() {
     try {
@@ -45,7 +56,7 @@ export default function DashboardPage() {
   if (!user)
     return (
       <div className="flex min-h-96 items-center justify-center text-[#667085]">
-        Carregando...
+        {authError || "Carregando..."}
       </div>
     );
   const professional = user.roles?.includes("PROFESSIONAL"),
