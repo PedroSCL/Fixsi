@@ -146,7 +146,7 @@ model Service {
   category    String
   priceFrom   Decimal?
   images      String[]
-  approved    Boolean  @default(false)
+  approved    Boolean  @default(true)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -172,7 +172,7 @@ model Tool {
   usageRules  String?
   images      String[]
   available   Boolean  @default(true)
-  approved    Boolean  @default(false)
+  approved    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
