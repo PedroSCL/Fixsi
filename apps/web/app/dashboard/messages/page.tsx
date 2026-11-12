@@ -43,8 +43,12 @@ interface Conversation {
 interface Booking {
   id: string;
   status: string;
+  clientId: string;
+  providerId: string;
   service?: { id: string; title: string; category: string };
   tool?: { id: string; title: string; category: string };
+  client?: { id: string; name: string };
+  provider?: { id: string; name: string };
   conversation: { id: string };
 }
 export default function MessagesPage() {
@@ -374,6 +378,10 @@ export default function MessagesPage() {
     }
   }
   const title = (b: Booking) => b.service?.title || b.tool?.title || "Conversa";
+  const contactName = (b: Booking) =>
+    b.clientId === userId
+      ? b.provider?.name || "Profissional"
+      : b.client?.name || "Cliente";
   const status = (value: string) =>
     ({
       PENDING: "Pendente",
@@ -468,8 +476,11 @@ export default function MessagesPage() {
                     </span>
                     <span className="min-w-0">
                       <strong className="block truncate text-sm text-[#17233B]">
-                        {title(b)}
+                        {contactName(b)}
                       </strong>
+                      <small className="mt-0.5 block truncate text-xs font-semibold text-[#667085]">
+                        {title(b)}
+                      </small>
                       <small className="mt-1 block font-bold text-[#F97316]">
                         {status(b.status)}
                       </small>

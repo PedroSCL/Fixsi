@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Check, MessageCircle, ShieldCheck } from "lucide-react";
-import { api, apiErrorMessage, isUnauthorized } from "../../lib/api";
+import { api, apiErrorMessage, formatCurrency, isUnauthorized } from "../../lib/api";
 interface ToolDetail {
   id: string;
   title: string;
@@ -140,7 +140,7 @@ export default function ToolDetailPage() {
               Valor da diária
             </p>
             <p className="mt-1 text-3xl font-extrabold text-[#17233B]">
-              R$ {Number(tool.pricePerDay).toFixed(2)}
+              {formatCurrency(tool.pricePerDay)}
             </p>
             {success ? (
               <div className="mt-5 text-center">

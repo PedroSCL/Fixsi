@@ -46,6 +46,13 @@ export function isUnauthorized(error: unknown) {
   return axios.isAxiosError(error) && error.response?.status === 401;
 }
 
+export function formatCurrency(value: number | string | null | undefined) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Number(value || 0));
+}
+
 type RetryableRequest = InternalAxiosRequestConfig & {
   _fixsiRetried?: boolean;
 };

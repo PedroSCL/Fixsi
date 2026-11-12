@@ -14,7 +14,7 @@ import {
   Star,
   Wrench,
 } from "lucide-react";
-import { api, apiErrorMessage, isUnauthorized } from "../../lib/api";
+import { api, apiErrorMessage, formatCurrency, isUnauthorized } from "../../lib/api";
 import { AvailabilityCalendar } from "../../components/AvailabilityCalendar";
 interface ServiceDetail {
   id: string;
@@ -229,7 +229,7 @@ export default function ServiceDetailPage() {
                   Valores a partir de
                 </p>
                 <p className="mt-1 text-3xl font-extrabold text-[#17233B]">
-                  R$ {Number(service.priceFrom).toFixed(2)}
+                  {formatCurrency(service.priceFrom)}
                 </p>
                 <small className="text-[#667085]">
                   Valor final combinado por proposta

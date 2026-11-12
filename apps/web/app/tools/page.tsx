@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, Drill, Search } from "lucide-react";
-import { api, Tool } from "../lib/api";
+import { api, formatCurrency, Tool } from "../lib/api";
 const FALLBACK = [
   "/img/furadeira.png",
   "/img/serra.png",
@@ -124,7 +124,7 @@ function ToolsContent() {
                     <span>
                       <small className="block text-[#667085]">Diária</small>
                       <strong className="text-xl text-[#17233B]">
-                        R$ {Number(tool.pricePerDay).toFixed(2)}
+                        {formatCurrency(tool.pricePerDay)}
                       </strong>
                     </span>
                     <Link
