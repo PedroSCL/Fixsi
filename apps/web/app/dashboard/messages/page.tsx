@@ -10,7 +10,7 @@ import {
   Send,
   X,
 } from "lucide-react";
-import { api, apiErrorMessage } from "../../lib/api";
+import { api, apiErrorMessage, isUnauthorized } from "../../lib/api";
 interface Message {
   id: string;
   content: string;
@@ -69,7 +69,16 @@ export default function MessagesPage() {
         await load();
         if (conversationId) await open(conversationId);
       })
-      .catch(() => router.replace("/login"));
+      .catch((error: unknown) => {
+        if (isUnauthorized(error)) {
+          router.replace("/login");
+          return;
+        }
+        setLoadError(
+          apiErrorMessage(error, "Não foi possível validar sua sessão."),
+        );
+        setLoading(false);
+      });
   }, [router, searchParams]);
   useEffect(() => {
     end.current?.scrollIntoView({ behavior: "smooth" });

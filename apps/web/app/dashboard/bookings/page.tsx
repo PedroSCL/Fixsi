@@ -13,7 +13,7 @@ import {
   Package,
   Star,
 } from "lucide-react";
-import { api, apiErrorMessage } from "../../lib/api";
+import { api, apiErrorMessage, isUnauthorized } from "../../lib/api";
 interface Booking {
   id: string;
   clientId: string;
@@ -59,7 +59,16 @@ export default function BookingsPage() {
         setProfessional(data.user.roles?.includes("PROFESSIONAL"));
         return load();
       })
-      .catch(() => router.replace("/login"));
+      .catch((error: unknown) => {
+        if (isUnauthorized(error)) {
+          router.replace("/login");
+          return;
+        }
+        setActionError(
+          apiErrorMessage(error, "Não foi possível validar sua sessão."),
+        );
+        setLoading(false);
+      });
   }, [router]);
   async function load() {
     try {
