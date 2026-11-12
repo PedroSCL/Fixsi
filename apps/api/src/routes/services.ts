@@ -139,19 +139,27 @@ export async function servicesRoutes(app: FastifyInstance) {
       });
     }
 
+    // Verifica se a identidade foi verificada
+    const verification = await prisma.identityVerification.findUnique({
+      where: { userId },
+    });
+
+    // Se verificado, publica direto. Se não, fica pendente.
+    const approved = verification?.status === "APPROVED";
+
     const service = await prisma.service.create({
       data: {
         ...body,
         userId,
-        // Durante a apresentação, anúncios publicados por profissionais vão
-        // diretamente para a listagem pública.
-        approved: true,
+        approved,
       },
     });
 
     return reply.code(201).send({
       service,
-      message: "Serviço publicado com sucesso",
+      message: approved
+        ? "Serviço publicado com sucesso"
+        : "Serviço criado. Complete a verificação de identidade para publicar.",
     });
   });
 

@@ -140,19 +140,26 @@ export async function toolsRoutes(app: FastifyInstance) {
       });
     }
 
+    // Verifica se identidade foi verificada
+    const verification = await prisma.identityVerification.findUnique({
+      where: { userId },
+    });
+
+    const approved = verification?.status === "APPROVED";
+
     const tool = await prisma.tool.create({
       data: {
         ...body,
         userId,
-        // Durante a apresentação, anúncios publicados por profissionais vão
-        // diretamente para a listagem pública.
-        approved: true,
+        approved,
       },
     });
 
     return reply.code(201).send({
       tool,
-      message: "Ferramenta publicada com sucesso",
+      message: approved
+        ? "Ferramenta publicada com sucesso"
+        : "Ferramenta criada. Complete a verificação de identidade para publicar.",
     });
   });
 

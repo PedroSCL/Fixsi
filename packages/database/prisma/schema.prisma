@@ -33,7 +33,6 @@ enum ProposalStatus {
   PENDING
   ACCEPTED
   REJECTED
-  SUPERSEDED
   EXPIRED
 }
 
@@ -146,7 +145,7 @@ model Service {
   category    String
   priceFrom   Decimal?
   images      String[]
-  approved    Boolean  @default(true)
+  approved    Boolean  @default(false)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -172,7 +171,7 @@ model Tool {
   usageRules  String?
   images      String[]
   available   Boolean  @default(true)
-  approved    Boolean  @default(true)
+  approved    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -285,7 +284,6 @@ model Proposal {
   amount      Decimal
   description String?
   status      ProposalStatus @default(PENDING)
-  round       Int            @default(1)
   expiresAt   DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -299,14 +297,7 @@ model Proposal {
   bookingId String?  @unique
   booking   Booking? @relation("AcceptedProposal", fields: [bookingId], references: [id])
 
-  // Cada nova proposta substitui a anterior. Isso mantém uma única oferta
-  // ativa por conversa, sem criar ramificações ambíguas na negociação.
-  replacesProposalId String?   @unique
-  replacesProposal   Proposal? @relation("ProposalReplacements", fields: [replacesProposalId], references: [id])
-  replacedBy         Proposal? @relation("ProposalReplacements")
-
   @@index([conversationId])
-  @@index([conversationId, status])
 }
 
 // ─── Avaliação ────────────────────────────────────────────────────────────────
