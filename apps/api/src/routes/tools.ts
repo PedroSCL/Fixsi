@@ -34,6 +34,17 @@ const reportSchema = z.object({
   details: z.string().optional(),
 });
 
+async function canManageTool(userId: string, ownerId: string) {
+  if (userId === ownerId) return true;
+
+  const adminRole = await prisma.userRole.findUnique({
+    where: { userId_type: { userId, type: "ADMIN" } },
+    select: { active: true },
+  });
+
+  return adminRole?.active === true;
+}
+
 export async function toolsRoutes(app: FastifyInstance) {
   // Listar ferramentas (público)
   app.get("/", async (request, reply) => {
@@ -181,7 +192,7 @@ export async function toolsRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Ferramenta não encontrada" });
     }
 
-    if (tool.userId !== userId) {
+    if (!(await canManageTool(userId, tool.userId))) {
       return reply.code(403).send({ error: "Sem permissão" });
     }
 
@@ -204,7 +215,7 @@ export async function toolsRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Ferramenta não encontrada" });
     }
 
-    if (tool.userId !== userId) {
+    if (!(await canManageTool(userId, tool.userId))) {
       return reply.code(403).send({ error: "Sem permissão" });
     }
 

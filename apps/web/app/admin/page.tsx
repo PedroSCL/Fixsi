@@ -7,10 +7,16 @@ import {
   AlertTriangle,
   ArrowLeft,
   Ban,
+  BriefcaseBusiness,
   CheckCircle2,
+  Drill,
+  type LucideIcon,
+  Pencil,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { api } from "../lib/api";
+import { useRequireRole } from "../lib/use-require-role";
 
 interface Report {
   id: string;
@@ -22,6 +28,13 @@ interface Report {
   tool: { id: string; title: string } | null;
 }
 
+interface AdminListing {
+  id: string;
+  title: string;
+  category: string;
+  user: { name: string; email: string };
+}
+
 const reasons: Record<string, string> = {
   FRAUD: "Possível fraude",
   INAPPROPRIATE_CONTENT: "Conteúdo impróprio",
@@ -31,18 +44,27 @@ const reasons: Record<string, string> = {
 };
 
 export default function AdminPage() {
+  const allowed = useRequireRole("ADMIN");
   const [reports, setReports] = useState<Report[]>([]);
+  const [services, setServices] = useState<AdminListing[]>([]);
+  const [tools, setTools] = useState<AdminListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [working, setWorking] = useState("");
 
   useEffect(() => {
-    load();
-  }, []);
+    if (allowed) void load();
+  }, [allowed]);
 
   async function load() {
     try {
-      setReports((await api.get("/admin/reports")).data.reports);
+      const [{ data: reportsData }, { data: listingsData }] = await Promise.all([
+        api.get("/admin/reports"),
+        api.get("/admin/listings"),
+      ]);
+      setReports(reportsData.reports);
+      setServices(listingsData.services);
+      setTools(listingsData.tools);
     } catch (caught) {
       setError(
         axios.isAxiosError(caught) && caught.response?.status === 403
@@ -51,6 +73,35 @@ export default function AdminPage() {
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function removeListing(type: "service" | "tool", id: string, title: string) {
+    if (
+      !window.confirm(
+        `Excluir o anúncio “${title}”? Ele deixará de ser exibido, mas o histórico será preservado.`,
+      )
+    ) {
+      return;
+    }
+
+    setWorking(`${type}-${id}`);
+    setError("");
+    try {
+      await api.delete(type === "service" ? `/services/${id}` : `/tools/${id}`);
+      if (type === "service") {
+        setServices((current) => current.filter((listing) => listing.id !== id));
+      } else {
+        setTools((current) => current.filter((listing) => listing.id !== id));
+      }
+    } catch (caught) {
+      setError(
+        axios.isAxiosError(caught)
+          ? caught.response?.data?.error || "Não foi possível excluir o anúncio."
+          : "Não foi possível excluir o anúncio.",
+      );
+    } finally {
+      setWorking("");
     }
   }
 
@@ -68,6 +119,14 @@ export default function AdminPage() {
     } finally {
       setWorking("");
     }
+  }
+
+  if (!allowed) {
+    return (
+      <div className="flex min-h-96 items-center justify-center text-[#667085]">
+        Verificando acesso...
+      </div>
+    );
   }
 
   return (
@@ -104,19 +163,61 @@ export default function AdminPage() {
         <div className="surface-card mt-8 p-10 text-center text-[#667085]">
           Carregando denúncias...
         </div>
-      ) : reports.length === 0 && !error ? (
-        <div className="surface-card mt-8 p-12 text-center">
-          <CheckCircle2 className="mx-auto text-[#F97316]" size={44} />
-          <h2 className="mt-4 text-xl font-extrabold text-[#17233B]">
-            Tudo em ordem
-          </h2>
-          <p className="mt-2 text-[#667085]">
-            Não há denúncias abertas no momento.
-          </p>
-        </div>
       ) : (
-        <section className="mt-8 space-y-4">
-          {reports.map((report) => (
+        <>
+          <section className="surface-card mt-8 p-6 sm:p-8">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFF1E8] text-[#F97316]">
+                <BriefcaseBusiness size={21} />
+              </span>
+              <div>
+                <p className="eyebrow">Gerenciamento</p>
+                <h2 className="text-xl font-extrabold text-[#17233B]">
+                  Todos os anúncios
+                </h2>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-5 lg:grid-cols-2">
+              <AdminListingsGroup
+                title="Serviços"
+                icon={BriefcaseBusiness}
+                listings={services}
+                editPath="services"
+                working={working}
+                onRemove={(id, title) => void removeListing("service", id, title)}
+              />
+              <AdminListingsGroup
+                title="Ferramentas"
+                icon={Drill}
+                listings={tools}
+                editPath="tools"
+                working={working}
+                onRemove={(id, title) => void removeListing("tool", id, title)}
+              />
+            </div>
+          </section>
+
+          <section className="mt-8">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                <AlertTriangle size={20} />
+              </span>
+              <div>
+                <p className="eyebrow">Moderação</p>
+                <h2 className="text-xl font-extrabold text-[#17233B]">
+                  Denúncias abertas
+                </h2>
+              </div>
+            </div>
+            {reports.length === 0 && !error ? (
+              <div className="surface-card p-9 text-center">
+                <CheckCircle2 className="mx-auto text-[#F97316]" size={38} />
+                <h3 className="mt-3 font-extrabold text-[#17233B]">Tudo em ordem</h3>
+                <p className="mt-1 text-sm text-[#667085]">Não há denúncias abertas no momento.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {reports.map((report) => (
             <article key={report.id} className="surface-card p-6">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
@@ -182,9 +283,66 @@ export default function AdminPage() {
                 </div>
               </div>
             </article>
-          ))}
-        </section>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
       )}
     </main>
+  );
+}
+
+function AdminListingsGroup({
+  title,
+  icon: Icon,
+  listings,
+  editPath,
+  working,
+  onRemove,
+}: {
+  title: string;
+  icon: LucideIcon;
+  listings: AdminListing[];
+  editPath: "services" | "tools";
+  working: string;
+  onRemove: (id: string, title: string) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-[#DED9D1] bg-[#FFFCF8] p-4">
+      <h3 className="flex items-center gap-2 font-extrabold text-[#17233B]">
+        <Icon size={18} className="text-[#F97316]" /> {title}
+      </h3>
+      {listings.length === 0 ? (
+        <p className="mt-4 text-sm text-[#667085]">Nenhum anúncio publicado.</p>
+      ) : (
+        <div className="mt-4 max-h-96 space-y-3 overflow-y-auto pr-1">
+          {listings.map((listing) => (
+            <article key={listing.id} className="rounded-lg border border-[#E7E2DA] bg-white p-3">
+              <p className="font-extrabold text-[#17233B]">{listing.title}</p>
+              <p className="mt-1 text-xs text-[#667085]">
+                {listing.category} · {listing.user.name}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Link
+                  href={`/dashboard/${editPath}/${listing.id}/edit`}
+                  className="btn-secondary flex-1 px-3 py-2 text-xs"
+                >
+                  <Pencil size={14} /> Editar
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => onRemove(listing.id, listing.title)}
+                  disabled={working === `${editPath === "services" ? "service" : "tool"}-${listing.id}`}
+                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                >
+                  <Trash2 size={14} /> Excluir
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

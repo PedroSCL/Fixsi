@@ -9,15 +9,17 @@ import {
   notifyAuthChanged,
 } from "./api";
 
-export function useRequireRole(role: string) {
+export function useRequireRole(role: string | string[]) {
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);
+  const rolesKey = Array.isArray(role) ? role.join(",") : role;
 
   useEffect(() => {
+    const requiredRoles = rolesKey.split(",");
     api
       .get("/auth/me")
       .then(({ data }) => {
-        if (data.user.roles?.includes(role)) {
+        if (requiredRoles.some((item) => data.user.roles?.includes(item))) {
           setAllowed(true);
           return;
         }
@@ -32,7 +34,7 @@ export function useRequireRole(role: string) {
         }
         router.replace("/dashboard");
       });
-  }, [role, router]);
+  }, [rolesKey, router]);
 
   return allowed;
 }

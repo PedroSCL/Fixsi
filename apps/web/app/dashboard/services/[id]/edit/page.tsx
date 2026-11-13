@@ -29,7 +29,7 @@ const CATEGORIES = [
 export default function EditServicePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const allowed = useRequireRole("PROFESSIONAL");
+  const allowed = useRequireRole(["PROFESSIONAL", "ADMIN"]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");

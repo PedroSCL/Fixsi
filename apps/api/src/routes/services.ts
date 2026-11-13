@@ -33,6 +33,17 @@ const reportSchema = z.object({
   details: z.string().optional(),
 });
 
+async function canManageService(userId: string, ownerId: string) {
+  if (userId === ownerId) return true;
+
+  const adminRole = await prisma.userRole.findUnique({
+    where: { userId_type: { userId, type: "ADMIN" } },
+    select: { active: true },
+  });
+
+  return adminRole?.active === true;
+}
+
 export async function servicesRoutes(app: FastifyInstance) {
   // Listar serviços (público)
   app.get("/", async (request, reply) => {
@@ -180,7 +191,7 @@ export async function servicesRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Serviço não encontrado" });
     }
 
-    if (service.userId !== userId) {
+    if (!(await canManageService(userId, service.userId))) {
       return reply.code(403).send({ error: "Sem permissão" });
     }
 
@@ -203,7 +214,7 @@ export async function servicesRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Serviço não encontrado" });
     }
 
-    if (service.userId !== userId) {
+    if (!(await canManageService(userId, service.userId))) {
       return reply.code(403).send({ error: "Sem permissão" });
     }
 

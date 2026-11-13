@@ -17,6 +17,26 @@ async function requireAdmin(request: any, reply: any) {
 }
 
 export async function adminRoutes(app: FastifyInstance) {
+  // Visão completa dos anúncios para manutenção administrativa.
+  app.get(
+    "/listings",
+    { preHandler: [requireAdmin] },
+    async (_request, reply) => {
+      const [services, tools] = await Promise.all([
+        prisma.service.findMany({
+          include: { user: { select: { id: true, name: true, email: true } } },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.tool.findMany({
+          include: { user: { select: { id: true, name: true, email: true } } },
+          orderBy: { createdAt: "desc" },
+        }),
+      ]);
+
+      return reply.send({ services, tools });
+    },
+  );
+
   // Listar denúncias abertas
   app.get(
     "/reports",
