@@ -93,6 +93,19 @@ export async function servicesRoutes(app: FastifyInstance) {
     });
   });
 
+  // Anúncios do profissional autenticado. Esta rota fica antes de /:id para
+  // que \"mine\" não seja tratado como identificador de um serviço.
+  app.get("/mine", { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = (request.user as { id: string }).id;
+
+    const services = await prisma.service.findMany({
+      where: { userId, active: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return reply.send({ services });
+  });
+
   // Detalhe de um serviço (público)
   app.get("/:id", async (request, reply) => {
     const { id } = request.params as { id: string };

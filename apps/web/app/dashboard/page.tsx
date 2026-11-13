@@ -76,6 +76,12 @@ export default function DashboardPage() {
             text: "Crie um novo anúncio",
             icon: Plus,
           },
+          {
+            href: "/dashboard/listings",
+            label: "Meus anúncios",
+            text: "Edite ou exclua suas publicações",
+            icon: Package,
+          },
         ]
       : []),
     ...(professional

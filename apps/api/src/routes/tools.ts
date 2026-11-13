@@ -94,6 +94,19 @@ export async function toolsRoutes(app: FastifyInstance) {
     });
   });
 
+  // Anúncios do profissional autenticado. Esta rota fica antes de /:id para
+  // que \"mine\" não seja tratado como identificador de uma ferramenta.
+  app.get("/mine", { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = (request.user as { id: string }).id;
+
+    const tools = await prisma.tool.findMany({
+      where: { userId, available: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return reply.send({ tools });
+  });
+
   // Detalhe de uma ferramenta (público)
   app.get("/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
