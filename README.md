@@ -1,115 +1,254 @@
 # Fixsi
 
-Plataforma web acadêmica para aproximar clientes e profissionais que oferecem serviços ou ferramentas. A aplicação permite descobrir profissionais, publicar serviços e equipamentos, conversar, negociar propostas, agendar atendimentos e avaliar a experiência.
+Plataforma web acadêmica que aproxima clientes de profissionais para contratação de serviços e locação de ferramentas. A Fixsi permite publicar anúncios, consultar disponibilidade, solicitar um atendimento, conversar em tempo real, negociar valores e acompanhar o agendamento até a conclusão.
 
-> Este repositório contém o módulo da Fixsi sob responsabilidade desta equipe. O módulo financeiro não faz parte deste código e será desenvolvido e integrado separadamente pelos demais integrantes do grupo.
+> Esta versão não possui gateway de pagamento ativo. O fluxo financeiro foi deixado fora do escopo atual para ser desenvolvido em etapa posterior.
 
-## Funcionalidades
+## Links do projeto
 
-- Cadastro e autenticação com sessões seguras em cookies HTTP-only.
-- Perfis de cliente, profissional e administrador. Profissionais também podem contratar como clientes.
-- Catálogo e busca de serviços por texto e categoria.
-- Catálogo e busca de ferramentas para locação.
-- Publicação e moderação de anúncios.
-- Solicitação e acompanhamento de agendamentos.
-- Chat em tempo real e propostas de orçamento incorporadas à conversa.
-- Confirmação da conclusão do serviço por profissional e cliente.
-- Avaliações, reputação e denúncias.
-- Validação de CPF no frontend e no backend.
-- Interface responsiva baseada na identidade visual do protótipo da Fixsi.
+- Aplicação web: [fixsi-web-nbvh.vercel.app](https://fixsi-web-nbvh.vercel.app/)
+- API: [fixsi-api.onrender.com/health](https://fixsi-api.onrender.com/health)
+- Repositório: [PedroSCL/Fixsi](https://github.com/PedroSCL/Fixsi)
+
+> O plano gratuito do Render pode pausar a API após inatividade. Nesse caso, o primeiro acesso pode levar alguns segundos.
+
+## Principais funcionalidades
+
+### Usuários e segurança
+
+- Cadastro de cliente ou profissional; profissionais também podem contratar serviços como clientes.
+- Perfis de **Cliente**, **Profissional** e **Administrador**.
+- Login com sessões armazenadas em cookies HTTP-only.
+- Renovação de sessão com refresh token rotativo.
+- Recuperação de senha por e-mail usando a API do Brevo.
+- Validação de CPF e telefone brasileiro no frontend e no backend.
+- Edição de perfil, alteração de tipo de conta e exclusão segura da conta.
+
+### Serviços, ferramentas e agenda
+
+- Busca de serviços por texto e categoria.
+- Busca de ferramentas disponíveis para locação.
+- Publicação imediata de anúncios de serviços e ferramentas.
+- Imagem opcional por URL, com ilustração padrão quando não há imagem.
+- Área **Meus anúncios** para o profissional editar ou retirar seus próprios anúncios.
+- Disponibilidade semanal e exceções por data para profissionais.
+- Cliente vê dias disponíveis antes de solicitar o serviço.
+
+### Conversas, propostas e acompanhamento
+
+- Solicitação de serviço cria um agendamento e uma conversa entre cliente e profissional.
+- Chat em tempo real com Socket.IO.
+- Indicador de mensagens não lidas na navegação.
+- Propostas e contrapropostas de valor dentro da conversa.
+- Aceite ou recusa de proposta.
+- Acompanhamento dos agendamentos pelas duas partes.
+- Conclusão do atendimento e avaliações obrigatórias entre cliente e profissional.
+
+### Administração
+
+- Painel administrativo protegido por papel.
+- Consulta de denúncias abertas.
+- Edição e desativação de qualquer anúncio do site.
+- Desativação mantém o histórico de pedidos, mas remove o anúncio da vitrine pública.
 
 ## Tecnologias
 
-| Camada         | Tecnologias                                              |
-| -------------- | -------------------------------------------------------- |
-| Monorepo       | pnpm workspaces e Turborepo                              |
-| Frontend       | Next.js 16, React 19, TypeScript e Tailwind CSS          |
-| Backend        | Node.js, Fastify, TypeScript e Socket.IO                 |
-| Banco de dados | PostgreSQL, Prisma ORM e adapter `pg`                    |
-| Validação      | Zod                                                      |
-| Autenticação   | JWT, refresh token rotativo, cookies HTTP-only e bcrypt  |
-| Qualidade      | ESLint, Prettier, TypeScript e testes nativos do Node.js |
+| Camada | Tecnologias e serviços |
+| --- | --- |
+| Monorepo | pnpm Workspaces e Turborepo |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS, Axios e Lucide |
+| Backend | Node.js, Fastify, TypeScript e Socket.IO |
+| Banco de dados | PostgreSQL hospedado no Neon |
+| ORM e migrações | Prisma ORM com adapter PostgreSQL |
+| Autenticação | JWT, cookies HTTP-only, refresh token rotativo e bcrypt |
+| Validação | Zod |
+| E-mail | Brevo API |
+| Deploy | Vercel (web) e Render (API) |
 
-## Estrutura
+## Arquitetura
 
-```text
+~~~text
+Navegador
+   │
+   ├── Vercel / Next.js (apps/web)
+   │       └── /api/* é encaminhado para a API
+   │
+   └── Render / Fastify (apps/api)
+           ├── API REST
+           ├── Socket.IO
+           ├── Brevo (recuperação de senha)
+           └── Prisma
+                    │
+                    └── Neon / PostgreSQL
+~~~
+
+O frontend usa chamadas na mesma origem (**/api**) para reduzir problemas de cookies, CORS e navegação móvel. A API é responsável pelas regras de autorização; esconder um botão na interface não substitui a validação feita no servidor.
+
+## Estrutura do repositório
+
+~~~text
 apps/
-  api/       API REST, autenticação e WebSocket
-  web/       aplicação Next.js
-  docs/      documentação auxiliar do monorepo
+  api/                API Fastify, autenticação, Socket.IO e regras de negócio
+  web/                Aplicação Next.js
 packages/
-  database/  schema, cliente e migrações do Prisma
-  ui/        componentes compartilhados
-  eslint-config/
-  typescript-config/
-```
+  database/           Schema, cliente e migrações do Prisma
+  ui/                 Componentes compartilhados
+  eslint-config/      Configuração compartilhada do ESLint
+  typescript-config/  Configurações compartilhadas do TypeScript
+docs/
+  diagrams/           Diagramas do projeto
+~~~
 
 ## Pré-requisitos
 
 - Node.js 18 ou superior.
-- pnpm 9.
-- PostgreSQL acessível localmente ou por um provedor externo.
+- pnpm 9 ou superior.
+- Um banco PostgreSQL acessível. Para o ambiente publicado, o projeto utiliza Neon.
 
-## Configuração local
+## Executando localmente
 
-1. Clone o repositório e entre na pasta.
+1. Clone o repositório e entre na pasta:
+
+~~~bash
+git clone https://github.com/PedroSCL/Fixsi.git
+cd Fixsi
+~~~
+
 2. Instale as dependências:
 
-   ```bash
-   pnpm install
-   ```
+~~~bash
+pnpm install
+~~~
 
-3. Copie `.env.example` para `.env` e preencha os valores:
+3. Crie os arquivos de ambiente a partir do modelo:
 
-   ```env
-   NODE_ENV=development
-   DATABASE_URL="postgresql://USUARIO:SENHA@localhost:5432/fixsi?schema=public"
-   PORT=3001
-   FRONTEND_URL="http://localhost:3000"
-   JWT_SECRET="use-um-segredo-aleatorio-com-32-ou-mais-caracteres"
-   NEXT_PUBLIC_API_URL="http://localhost:3001"
-   ```
+~~~bash
+cp .env.example apps/api/.env
+cp .env.example packages/database/.env
+printf "API_URL=http://localhost:3001\n" > apps/web/.env.local
+~~~
 
-4. Gere o cliente do Prisma e aplique as migrações:
+No Windows PowerShell:
 
-   ```bash
-   pnpm --filter @fixsi/database exec prisma generate
-   pnpm --filter @fixsi/database exec prisma migrate deploy
-   ```
+~~~powershell
+Copy-Item .env.example apps/api/.env
+Copy-Item .env.example packages/database/.env
+Set-Content apps/web/.env.local 'API_URL=http://localhost:3001'
+~~~
 
-5. Inicie o projeto:
+4. Preencha **apps/api/.env** com as variáveis da API. Para comandos do Prisma, mantenha também a **DATABASE_URL** em **packages/database/.env**. O arquivo **apps/web/.env.local** informa ao Next.js onde a API está rodando.
 
-   ```bash
-   pnpm dev
-   ```
+5. Gere o cliente Prisma e aplique as migrações:
 
-Por padrão, o frontend abre em `http://localhost:3000` e a API em `http://localhost:3001`.
+~~~bash
+pnpm --filter @fixsi/database exec prisma generate
+pnpm --filter @fixsi/database exec prisma migrate deploy
+~~~
+
+6. Inicie frontend e backend:
+
+~~~bash
+pnpm dev
+~~~
+
+Por padrão:
+
+- Frontend: http://localhost:3000
+- API: http://localhost:3001
+- Saúde da API: http://localhost:3001/health
+
+## Variáveis de ambiente
+
+Use o arquivo [.env.example](./.env.example) como referência. Nunca envie arquivos .env ao GitHub.
+
+| Variável | Onde é usada | Finalidade |
+| --- | --- | --- |
+| DATABASE_URL | API e Prisma | Conexão PostgreSQL/Neon |
+| PORT | API | Porta do servidor Fastify |
+| FRONTEND_URL | API | URL exata do frontend; usada por CORS, cookies e link de recuperação |
+| JWT_SECRET | API | Assinatura dos tokens de sessão; use valor forte com pelo menos 32 caracteres |
+| BREVO_API_KEY | API | Envio de e-mails de recuperação de senha |
+| BREVO_SENDER_EMAIL | API | Remetente previamente verificado no Brevo |
+| BREVO_SENDER_NAME | API | Nome exibido como remetente |
+| API_URL ou NEXT_PUBLIC_API_URL | Web | URL da API usada pelo rewrite /api |
+
+### Configuração de produção
+
+**Render (API)**
+
+- Configure todas as variáveis da tabela acima, exceto as exclusivas do frontend.
+- Defina NODE_ENV=production.
+- Aponte FRONTEND_URL para a URL publicada no Vercel.
+- O health check é /health.
+
+**Vercel (web)**
+
+- Configure API_URL com a URL pública da API Render, sem barra final.
+- Após mudar essa variável, faça um novo deploy para que o rewrite seja atualizado.
+
+**Brevo**
+
+- Crie uma chave de API transacional.
+- Verifique o endereço usado em BREVO_SENDER_EMAIL.
+- Cadastre BREVO_API_KEY, BREVO_SENDER_EMAIL e BREVO_SENDER_NAME no Render.
 
 ## Comandos úteis
 
-```bash
+~~~bash
+# Desenvolvimento de todo o monorepo
 pnpm dev
+
+# Build de todos os pacotes
 pnpm build
+
+# Testes configurados no monorepo
 pnpm test
+
+# Frontend
 pnpm --filter web lint
 pnpm --filter web check-types
+pnpm --filter web build
+
+# API
 pnpm --filter api check-types
-```
+pnpm --filter api test
 
-## Segurança
+# Banco de dados
+pnpm --filter @fixsi/database exec prisma generate
+pnpm --filter @fixsi/database exec prisma migrate dev --name nome_da_migracao
+pnpm --filter @fixsi/database exec prisma migrate deploy
+~~~
 
-- Não publique `.env`, credenciais de banco ou segredos JWT.
-- Use um `JWT_SECRET` exclusivo e forte em cada ambiente.
-- Em produção, configure HTTPS e os domínios exatos em `FRONTEND_URL`.
-- A autenticação usa cookies seguros e não armazena tokens no `localStorage`.
-- Rotas sensíveis exigem autenticação e autorização por papel.
-- Entradas são validadas no backend mesmo quando já existe validação visual no frontend.
-- Senhas são armazenadas somente como hash bcrypt.
+## Segurança aplicada
 
-## Escopo do módulo financeiro
+- Senhas armazenadas como hash bcrypt; nunca em texto puro.
+- Cookies de autenticação HTTP-only, protegidos contra leitura por JavaScript.
+- Token de acesso de curta duração e refresh token rotativo.
+- Sessões podem ser revogadas ao alterar a senha ou excluir a conta.
+- Proteção de origem para requisições que alteram dados.
+- Rate limiting em cadastro, login, recuperação e renovação de sessão.
+- Validação de dados com Zod em todas as rotas relevantes.
+- CPF e telefone normalizados antes da validação.
+- Permissões verificadas no backend para editar, excluir, administrar anúncios, mensagens e agendamentos.
+- Tokens de recuperação armazenados somente como hash, com uso único e validade de uma hora.
 
-Este repositório não implementa cobrança, PIX, carteira, repasse ou integração com gateways. A proposta aceita inicia o atendimento e o fluxo segue até a confirmação de conclusão. A futura integração financeira deverá ser entregue como um módulo separado, com contrato de API próprio, sem acoplar credenciais ou regras financeiras a este código.
+## Fluxo resumido de contratação
+
+1. O cliente busca um serviço e escolhe um profissional.
+2. Seleciona um dia disponível e envia a solicitação.
+3. A Fixsi cria o agendamento e a conversa.
+4. Cliente e profissional conversam e negociam propostas ou contrapropostas.
+5. Uma proposta é aceita e o serviço é confirmado.
+6. Após a realização, as duas partes concluem a etapa e deixam suas avaliações.
+
+## Próximas evoluções
+
+- Integração de pagamento com retenção de valor e repasse ao profissional.
+- Upload de imagens para armazenamento próprio, substituindo URLs externas.
+- Login social, como Google.
+- Notificações por e-mail e push para novos pedidos e mensagens.
+- Painel administrativo com métricas e auditoria mais detalhada.
 
 ## Licença e contexto
 
-Projeto acadêmico desenvolvido para a disciplina de Desenvolvimento de Solução Computacional. O uso, a distribuição e a integração devem seguir as decisões do grupo responsável pelo projeto.
+Projeto acadêmico desenvolvido para a disciplina de Desenvolvimento de Solução Computacional. O uso, a distribuição e futuras integrações devem respeitar as decisões do grupo responsável.
